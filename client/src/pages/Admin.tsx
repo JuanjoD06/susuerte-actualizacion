@@ -4,18 +4,17 @@
  * 
  * Funcionalidades:
  *   - Autenticación con contraseña
- *   - Tabla de registros de colaboradores
- *   - Filtrado por correo electrónico
- *   - Botón de verificación para cada registro
- *   - Exportación de datos a CSV
- *   - Estadísticas generales
+ *   - Estadísticas: Total registros, total clics, IPs únicas
+ *   - Tabla de registros de usuarios (nombre, email, IP, user agent, timestamp)
+ *   - Tabla de registro de clics (nombre, email, IP, target, timestamp)
+ *   - Exportación de datos a CSV para cada tabla
  */
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { LogOut, Eye, EyeOff, Download, Check, X } from "lucide-react";
+import { LogOut, Eye, EyeOff, Download } from "lucide-react";
 
-interface Registro {
+interface RegistroUsuario {
   id: string;
   nombre: string;
   email: string;
@@ -23,27 +22,38 @@ interface Registro {
   documento: string;
   verificado: boolean;
   timestamp: string;
+  ip?: string;
+  userAgent?: string;
+}
+
+interface RegistroClick {
+  id: string;
+  nombre: string;
+  email: string;
+  ip: string;
+  target: string;
+  timestamp: string;
 }
 
 export default function Admin() {
   const [autenticado, setAutenticado] = useState(false);
   const [contrasena, setContrasena] = useState("");
-  const [registros, setRegistros] = useState<Registro[]>([]);
-  const [filtro, setFiltro] = useState("");
+  const [registrosUsuarios, setRegistrosUsuarios] = useState<RegistroUsuario[]>([]);
+  const [registrosClics, setRegistrosClics] = useState<RegistroClick[]>([]);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
 
   // Cargar registros del localStorage
   useEffect(() => {
     const registrosGuardados = localStorage.getItem("susuerte_registros");
     if (registrosGuardados) {
-      setRegistros(JSON.parse(registrosGuardados));
+      setRegistrosUsuarios(JSON.parse(registrosGuardados));
+    }
+
+    const clicsGuardados = localStorage.getItem("susuerte_clics");
+    if (clicsGuardados) {
+      setRegistrosClics(JSON.parse(clicsGuardados));
     }
   }, []);
-
-  // Guardar registros en localStorage cuando cambien
-  useEffect(() => {
-    localStorage.setItem("susuerte_registros", JSON.stringify(registros));
-  }, [registros]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,26 +70,19 @@ export default function Admin() {
     setContrasena("");
   };
 
-  const registrosFiltrados = registros.filter((reg) =>
-    reg.email.toLowerCase().includes(filtro.toLowerCase())
-  );
+  // Calcular estadísticas
+  const totalRegistros = registrosUsuarios.length;
+  const totalClics = registrosClics.length;
+  const ipsUnicas = new Set(registrosClics.map((c) => c.ip)).size;
 
-  const toggleVerificado = (id: string) => {
-    setRegistros(
-      registros.map((reg) =>
-        reg.id === id ? { ...reg, verificado: !reg.verificado } : reg
-      )
-    );
-  };
-
-  const exportarCSV = () => {
-    const headers = ["Nombre", "Email", "Teléfono", "Documento", "Verificado", "Fecha"];
-    const rows = registrosFiltrados.map((reg) => [
+  // Exportar CSV para registros de usuarios
+  const exportarCSVUsuarios = () => {
+    const headers = ["Nombre", "Email", "IP", "User Agent", "Timestamp"];
+    const rows = registrosUsuarios.map((reg) => [
       reg.nombre,
       reg.email,
-      reg.telefono,
-      reg.documento,
-      reg.verificado ? "Sí" : "No",
+      reg.ip || "-",
+      reg.userAgent || "-",
       reg.timestamp,
     ]);
 
@@ -92,7 +95,31 @@ export default function Admin() {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `susuerte_registros_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `susuerte_usuarios_${new Date().toISOString().split("T")[0]}.csv`);
+    link.click();
+  };
+
+  // Exportar CSV para registro de clics
+  const exportarCSVClics = () => {
+    const headers = ["Nombre", "Email", "IP", "Target", "Timestamp"];
+    const rows = registrosClics.map((clic) => [
+      clic.nombre,
+      clic.email,
+      clic.ip,
+      clic.target,
+      clic.timestamp,
+    ]);
+
+    const csv = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `susuerte_clics_${new Date().toISOString().split("T")[0]}.csv`);
     link.click();
   };
 
@@ -242,7 +269,7 @@ export default function Admin() {
               className="text-3xl font-bold text-gray-800"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >
-              {registros.length}
+              {totalRegistros}
             </p>
           </motion.div>
 
@@ -256,13 +283,13 @@ export default function Admin() {
               className="text-gray-500 text-sm font-semibold mb-2"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >
-              Verificados
+              Total de Clics
             </p>
             <p
-              className="text-3xl font-bold text-green-600"
+              className="text-3xl font-bold text-blue-600"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >
-              {registros.filter((r) => r.verificado).length}
+              {totalClics}
             </p>
           </motion.div>
 
@@ -276,47 +303,29 @@ export default function Admin() {
               className="text-gray-500 text-sm font-semibold mb-2"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >
-              Pendientes
+              IPs Únicas
             </p>
             <p
-              className="text-3xl font-bold text-yellow-600"
+              className="text-3xl font-bold text-purple-600"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >
-              {registros.filter((r) => !r.verificado).length}
+              {ipsUnicas}
             </p>
           </motion.div>
         </div>
 
-        {/* Filtro y Exportar */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-1">
-              <label
-                className="block text-sm font-semibold text-gray-700 mb-2"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              >
-                Filtrar por correo electrónico
-              </label>
-              <input
-                type="text"
-                placeholder="Buscar por email..."
-                value={filtro}
-                onChange={(e) => setFiltro(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none transition-all"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "#1a3fa0";
-                  e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "#e5e7eb";
-                  e.target.style.boxShadow = "none";
-                }}
-              />
-            </div>
+        {/* Sección: Registros de Usuarios */}
+        <div className="bg-white rounded-lg border border-gray-200 mb-8 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2
+              className="text-lg font-bold text-gray-800"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              Registros de Usuarios
+            </h2>
             <button
-              onClick={exportarCSV}
-              disabled={registrosFiltrados.length === 0}
+              onClick={exportarCSVUsuarios}
+              disabled={registrosUsuarios.length === 0}
               className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >
@@ -324,10 +333,7 @@ export default function Admin() {
               Exportar CSV
             </button>
           </div>
-        </div>
 
-        {/* Tabla de Registros */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -348,33 +354,27 @@ export default function Admin() {
                     className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
                     style={{ fontFamily: "'Nunito', sans-serif" }}
                   >
-                    Teléfono
+                    IP
                   </th>
                   <th
                     className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
                     style={{ fontFamily: "'Nunito', sans-serif" }}
                   >
-                    Documento
+                    User Agent
                   </th>
                   <th
                     className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
                     style={{ fontFamily: "'Nunito', sans-serif" }}
                   >
-                    Verificado
-                  </th>
-                  <th
-                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
-                    style={{ fontFamily: "'Nunito', sans-serif" }}
-                  >
-                    Fecha
+                    Timestamp
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {registrosFiltrados.length === 0 ? (
+                {registrosUsuarios.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={5}
                       className="px-6 py-8 text-center text-gray-500"
                       style={{ fontFamily: "'Nunito', sans-serif" }}
                     >
@@ -382,7 +382,7 @@ export default function Admin() {
                     </td>
                   </tr>
                 ) : (
-                  registrosFiltrados.map((registro, idx) => (
+                  registrosUsuarios.map((registro, idx) => (
                     <motion.tr
                       key={registro.id}
                       initial={{ opacity: 0 }}
@@ -406,42 +406,134 @@ export default function Admin() {
                         className="px-6 py-4 text-sm text-gray-800"
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                       >
-                        {registro.telefono || "-"}
+                        {registro.ip || "-"}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-sm text-gray-800 max-w-xs truncate"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                        title={registro.userAgent}
+                      >
+                        {registro.userAgent || "-"}
                       </td>
                       <td
                         className="px-6 py-4 text-sm text-gray-800"
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                       >
-                        {registro.documento || "-"}
+                        {new Date(registro.timestamp).toLocaleString("es-CL")}
                       </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => toggleVerificado(registro.id)}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold text-sm transition-colors ${
-                            registro.verificado
-                              ? "bg-green-100 text-green-700 hover:bg-green-200"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
-                          style={{ fontFamily: "'Nunito', sans-serif" }}
-                        >
-                          {registro.verificado ? (
-                            <>
-                              <Check size={16} />
-                              Verificado
-                            </>
-                          ) : (
-                            <>
-                              <X size={16} />
-                              Pendiente
-                            </>
-                          )}
-                        </button>
-                      </td>
+                    </motion.tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Sección: Registro de Clics */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2
+              className="text-lg font-bold text-gray-800"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              Registro de Clics
+            </h2>
+            <button
+              onClick={exportarCSVClics}
+              disabled={registrosClics.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              <Download size={18} />
+              Exportar CSV
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Nombre
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Email
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    IP
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Target
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Timestamp
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {registrosClics.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-8 text-center text-gray-500"
+                      style={{ fontFamily: "'Nunito', sans-serif" }}
+                    >
+                      No hay registros de clics
+                    </td>
+                  </tr>
+                ) : (
+                  registrosClics.map((clic, idx) => (
+                    <motion.tr
+                      key={clic.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
                       <td
-                        className="px-6 py-4 text-sm text-gray-600"
+                        className="px-6 py-4 text-sm text-gray-800"
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                       >
-                        {new Date(registro.timestamp).toLocaleDateString("es-ES")}
+                        {clic.nombre}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-sm text-gray-800"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      >
+                        {clic.email}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-sm text-gray-800"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      >
+                        {clic.ip}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-sm text-gray-800"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      >
+                        {clic.target}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-sm text-gray-800"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      >
+                        {new Date(clic.timestamp).toLocaleString("es-CL")}
                       </td>
                     </motion.tr>
                   ))

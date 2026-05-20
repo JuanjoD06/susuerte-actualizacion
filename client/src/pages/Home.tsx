@@ -55,11 +55,6 @@ export default function Home() {
       
       setLoading(false);
       setSubmitted(true);
-      
-      // Redirigir al admin después de 2 segundos
-      setTimeout(() => {
-        navigate("/admin");
-      }, 2000);
     }, 1200);
   };
 
@@ -149,12 +144,7 @@ export default function Home() {
               >
                 Tu información ha sido registrada exitosamente.
               </p>
-              <p
-                className="text-gray-400 text-xs mt-3"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              >
-                Redirigiendo al panel de verificación...
-              </p>
+
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -321,7 +311,7 @@ export default function Home() {
                   className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                 >
-                  Panel de Administración →
+                  
                 </a>
               </div>
             </form>
