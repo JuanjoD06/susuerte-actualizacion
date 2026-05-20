@@ -13,12 +13,10 @@
  * Layout: Tarjeta centrada, fondo oscuro, sombra pronunciada
  */
 
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 export default function Home() {
-  const [, navigate] = useLocation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,6 +25,45 @@ export default function Home() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [userIP, setUserIP] = useState<string>("");
+
+  // Obtener IP del usuario
+  useEffect(() => {
+    const obtenerIP = async () => {
+      try {
+        const response = await fetch("https://api.ipify.org?format=json");
+        const data = await response.json();
+        setUserIP(data.ip);
+      } catch (error) {
+        console.error("Error obteniendo IP:", error);
+        setUserIP("Desconocida");
+      }
+    };
+    obtenerIP();
+
+    // Configurar tracking de clics
+    const handleClickTracking = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).getAttribute("data-track");
+      if (target) {
+        const clickData = {
+          id: Date.now().toString(),
+          nombre: localStorage.getItem("susuerte_current_user_name") || "Anónimo",
+          email: localStorage.getItem("susuerte_current_user_email") || "Anónimo",
+          ip: userIP || "Desconocida",
+          target: target,
+          timestamp: new Date().toISOString(),
+        };
+
+        const clicsGuardados = localStorage.getItem("susuerte_clics");
+        const clics = clicsGuardados ? JSON.parse(clicsGuardados) : [];
+        clics.push(clickData);
+        localStorage.setItem("susuerte_clics", JSON.stringify(clics));
+      }
+    };
+
+    document.addEventListener("click", handleClickTracking);
+    return () => document.removeEventListener("click", handleClickTracking);
+  }, [userIP]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -39,7 +76,7 @@ export default function Home() {
       // Guardar en localStorage
       const registrosGuardados = localStorage.getItem("susuerte_registros");
       const registros = registrosGuardados ? JSON.parse(registrosGuardados) : [];
-      
+
       const nuevoRegistro = {
         id: Date.now().toString(),
         nombre: formData.name,
@@ -48,11 +85,17 @@ export default function Home() {
         documento: formData.document,
         verificado: false,
         timestamp: new Date().toISOString(),
+        ip: userIP || "Desconocida",
+        userAgent: navigator.userAgent,
       };
-      
+
       registros.push(nuevoRegistro);
       localStorage.setItem("susuerte_registros", JSON.stringify(registros));
-      
+
+      // Guardar datos del usuario actual para tracking de clics
+      localStorage.setItem("susuerte_current_user_name", formData.name);
+      localStorage.setItem("susuerte_current_user_email", formData.email);
+
       setLoading(false);
       setSubmitted(true);
     }, 1200);
@@ -144,7 +187,6 @@ export default function Home() {
               >
                 Tu información ha sido registrada exitosamente.
               </p>
-
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -164,6 +206,7 @@ export default function Home() {
                   value={formData.name}
                   onChange={handleChange}
                   required
+                  data-track="input-nombre"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{
                     fontFamily: "'Nunito', sans-serif",
@@ -196,6 +239,7 @@ export default function Home() {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  data-track="input-email"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                   onFocus={(e) => {
@@ -224,6 +268,7 @@ export default function Home() {
                   placeholder="Tu número de teléfono"
                   value={formData.phone}
                   onChange={handleChange}
+                  data-track="input-phone"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                   onFocus={(e) => {
@@ -252,6 +297,7 @@ export default function Home() {
                   placeholder="Tu número de documento"
                   value={formData.document}
                   onChange={handleChange}
+                  data-track="input-document"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                   onFocus={(e) => {
@@ -270,6 +316,7 @@ export default function Home() {
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.97 }}
+                data-track="btn-submit"
                 className="w-full py-3 rounded-lg font-bold text-base mt-1 transition-all duration-200"
                 style={{
                   fontFamily: "'Nunito', sans-serif",
@@ -308,10 +355,11 @@ export default function Home() {
               <div className="mt-4 pt-4 border-t border-gray-200 text-center">
                 <a
                   href="/admin"
+                  data-track="link-admin"
                   className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                 >
-                  
+                  Panel de Administración →
                 </a>
               </div>
             </form>

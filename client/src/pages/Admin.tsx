@@ -7,6 +7,7 @@
  *   - Estadísticas: Total registros, total clics, IPs únicas
  *   - Tabla de registros de usuarios (nombre, email, IP, user agent, timestamp)
  *   - Tabla de registro de clics (nombre, email, IP, target, timestamp)
+ *   - Conteos de clics por usuario
  *   - Exportación de datos a CSV para cada tabla
  */
 
@@ -74,6 +75,13 @@ export default function Admin() {
   const totalRegistros = registrosUsuarios.length;
   const totalClics = registrosClics.length;
   const ipsUnicas = new Set(registrosClics.map((c) => c.ip)).size;
+
+  // Contar clics por usuario (email)
+  const conteoClicksPorUsuario = registrosClics.reduce((acc, clic) => {
+    const email = clic.email;
+    acc[email] = (acc[email] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Exportar CSV para registros de usuarios
   const exportarCSVUsuarios = () => {
@@ -403,7 +411,7 @@ export default function Admin() {
                         {registro.email}
                       </td>
                       <td
-                        className="px-6 py-4 text-sm text-gray-800"
+                        className="px-6 py-4 text-sm font-mono text-gray-800 bg-gray-100 rounded"
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                       >
                         {registro.ip || "-"}
@@ -413,13 +421,82 @@ export default function Admin() {
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                         title={registro.userAgent}
                       >
-                        {registro.userAgent || "-"}
+                        {registro.userAgent ? registro.userAgent.substring(0, 50) + "..." : "-"}
                       </td>
                       <td
                         className="px-6 py-4 text-sm text-gray-800"
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                       >
                         {new Date(registro.timestamp).toLocaleString("es-CL")}
+                      </td>
+                    </motion.tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Sección: Conteo de Clics por Usuario */}
+        <div className="bg-white rounded-lg border border-gray-200 mb-8 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2
+              className="text-lg font-bold text-gray-800"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              Conteo de Clics por Usuario
+            </h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Email
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Total de Clics
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(conteoClicksPorUsuario).length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="px-6 py-8 text-center text-gray-500"
+                      style={{ fontFamily: "'Nunito', sans-serif" }}
+                    >
+                      No hay clics registrados
+                    </td>
+                  </tr>
+                ) : (
+                  Object.entries(conteoClicksPorUsuario).map(([email, count], idx) => (
+                    <motion.tr
+                      key={email}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <td
+                        className="px-6 py-4 text-sm text-gray-800"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      >
+                        {email}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-sm font-bold text-blue-600"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      >
+                        {count}
                       </td>
                     </motion.tr>
                   ))
@@ -518,13 +595,13 @@ export default function Admin() {
                         {clic.email}
                       </td>
                       <td
-                        className="px-6 py-4 text-sm text-gray-800"
+                        className="px-6 py-4 text-sm font-mono text-gray-800 bg-gray-100 rounded"
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                       >
                         {clic.ip}
                       </td>
                       <td
-                        className="px-6 py-4 text-sm text-gray-800"
+                        className="px-6 py-4 text-sm text-gray-800 font-semibold"
                         style={{ fontFamily: "'Nunito', sans-serif" }}
                       >
                         {clic.target}
