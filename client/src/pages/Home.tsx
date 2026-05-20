@@ -14,9 +14,11 @@
  */
 
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 
 export default function Home() {
+  const [, navigate] = useLocation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -34,8 +36,30 @@ export default function Home() {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
+      // Guardar en localStorage
+      const registrosGuardados = localStorage.getItem("susuerte_registros");
+      const registros = registrosGuardados ? JSON.parse(registrosGuardados) : [];
+      
+      const nuevoRegistro = {
+        id: Date.now().toString(),
+        nombre: formData.name,
+        email: formData.email,
+        telefono: formData.phone,
+        documento: formData.document,
+        verificado: false,
+        timestamp: new Date().toISOString(),
+      };
+      
+      registros.push(nuevoRegistro);
+      localStorage.setItem("susuerte_registros", JSON.stringify(registros));
+      
       setLoading(false);
       setSubmitted(true);
+      
+      // Redirigir al admin después de 2 segundos
+      setTimeout(() => {
+        navigate("/admin");
+      }, 2000);
     }, 1200);
   };
 
@@ -124,6 +148,12 @@ export default function Home() {
                 style={{ fontFamily: "'Nunito', sans-serif" }}
               >
                 Tu información ha sido registrada exitosamente.
+              </p>
+              <p
+                className="text-gray-400 text-xs mt-3"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
+                Redirigiendo al panel de verificación...
               </p>
             </motion.div>
           ) : (
@@ -284,6 +314,16 @@ export default function Home() {
               >
                 Al enviar, aceptas nuestros términos y condiciones.
               </p>
+
+              <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                <a
+                  href="/admin"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                >
+                  Panel de Administración →
+                </a>
+              </div>
             </form>
           )}
         </div>
