@@ -445,16 +445,7 @@ export default function Home() {
                 Al enviar, aceptas nuestros términos y condiciones.
               </p>
 
-              <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-                <a
-                  href="/admin"
-                  data-track="link-admin"
-                  className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
-                  style={{ fontFamily: "'Nunito', sans-serif" }}
-                >
-                  Panel de Administración →
-                </a>
-              </div>
+
             </form>
           )}
         </div>
