@@ -15,9 +15,29 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { captureDeviceData, initializeSessionMetrics, calculatePageViewTime, calculateScrollDepth } from "@/lib/deviceDetection";
+
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  document: string;
+}
+
+interface RegistroUsuario {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  documento: string;
+  verificado: boolean;
+  timestamp: string;
+  deviceData: any;
+  sessionMetrics: any;
+}
 
 export default function Home() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
     phone: "",
@@ -25,59 +45,132 @@ export default function Home() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [userIP, setUserIP] = useState<string>("");
+  const [deviceData, setDeviceData] = useState<any>(null);
+  const [sessionMetrics, setSessionMetrics] = useState<any>(null);
+  const [sessionStart] = useState(Date.now());
 
-  // Obtener IP del usuario
+  // Capturar datos técnicos al cargar la página
   useEffect(() => {
-    const obtenerIP = async () => {
-      try {
-        const response = await fetch("https://api.ipify.org?format=json");
-        const data = await response.json();
-        setUserIP(data.ip);
-      } catch (error) {
-        console.error("Error obteniendo IP:", error);
-        setUserIP("Desconocida");
-      }
+    const captureData = async () => {
+      const device = await captureDeviceData();
+      setDeviceData(device);
     };
-    obtenerIP();
+    captureData();
+  }, []);
 
-    // Configurar tracking de clics
+  // Inicializar métricas de sesión
+  useEffect(() => {
+    const metrics = initializeSessionMetrics();
+    setSessionMetrics(metrics);
+
+    // Tracking de scroll
+    const handleScroll = () => {
+      setSessionMetrics((prev: any) => ({
+        ...prev,
+        scrollDepth: calculateScrollDepth(),
+      }));
+    };
+
+    // Tracking de focus/blur
+    const handleFocus = () => {
+      setSessionMetrics((prev: any) => ({
+        ...prev,
+        focusEvents: (prev?.focusEvents || 0) + 1,
+      }));
+    };
+
+    const handleBlur = () => {
+      setSessionMetrics((prev: any) => ({
+        ...prev,
+        blurEvents: (prev?.blurEvents || 0) + 1,
+      }));
+    };
+
+    // Tracking de copy/paste
+    const handleCopyPaste = () => {
+      setSessionMetrics((prev: any) => ({
+        ...prev,
+        copyPasteEvents: (prev?.copyPasteEvents || 0) + 1,
+      }));
+    };
+
+    // Tracking de clics
     const handleClickTracking = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).getAttribute("data-track");
       if (target) {
         const clickData = {
           id: Date.now().toString(),
-          nombre: localStorage.getItem("susuerte_current_user_name") || "Anónimo",
-          email: localStorage.getItem("susuerte_current_user_email") || "Anónimo",
-          ip: userIP || "Desconocida",
+          nombre: formData.name || "Anónimo",
+          email: formData.email || "Anónimo",
+          ip: deviceData?.publicIP || "Desconocida",
           target: target,
           timestamp: new Date().toISOString(),
+          deviceData: deviceData,
         };
 
         const clicsGuardados = localStorage.getItem("susuerte_clics");
         const clics = clicsGuardados ? JSON.parse(clicsGuardados) : [];
         clics.push(clickData);
         localStorage.setItem("susuerte_clics", JSON.stringify(clics));
+
+        setSessionMetrics((prev: any) => ({
+          ...prev,
+          clickCount: (prev?.clickCount || 0) + 1,
+        }));
       }
     };
 
+    // Tracking de keypresses
+    const handleKeyPress = () => {
+      setSessionMetrics((prev: any) => ({
+        ...prev,
+        keyPressCount: (prev?.keyPressCount || 0) + 1,
+      }));
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("copy", handleCopyPaste);
+    window.addEventListener("paste", handleCopyPaste);
     document.addEventListener("click", handleClickTracking);
-    return () => document.removeEventListener("click", handleClickTracking);
-  }, [userIP]);
+    window.addEventListener("keypress", handleKeyPress);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("copy", handleCopyPaste);
+      window.removeEventListener("paste", handleCopyPaste);
+      document.removeEventListener("click", handleClickTracking);
+      window.removeEventListener("keypress", handleKeyPress);
+    };
+  }, [formData, deviceData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
+    setSessionMetrics((prev: any) => ({
+      ...prev,
+      formInteractions: (prev?.formInteractions || 0) + 1,
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
+      // Calcular métricas finales
+      const finalMetrics = {
+        ...sessionMetrics,
+        pageViewTime: calculatePageViewTime(sessionStart),
+        formCompletionPercentage: 100,
+      };
+
       // Guardar en localStorage
       const registrosGuardados = localStorage.getItem("susuerte_registros");
       const registros = registrosGuardados ? JSON.parse(registrosGuardados) : [];
 
-      const nuevoRegistro = {
+      const nuevoRegistro: RegistroUsuario = {
         id: Date.now().toString(),
         nombre: formData.name,
         email: formData.email,
@@ -85,8 +178,8 @@ export default function Home() {
         documento: formData.document,
         verificado: false,
         timestamp: new Date().toISOString(),
-        ip: userIP || "Desconocida",
-        userAgent: navigator.userAgent,
+        deviceData: deviceData,
+        sessionMetrics: finalMetrics,
       };
 
       registros.push(nuevoRegistro);
@@ -380,21 +473,25 @@ export default function Home() {
             <img
               src="/manus-storage/iso9001_95575a89.png"
               alt="ISO 9001 Certified"
-              className="h-8 w-auto object-contain opacity-80"
+              className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity"
             />
             <img
               src="/manus-storage/super-salud_bb073043.png"
               alt="Super Salud"
-              className="h-8 w-auto object-contain opacity-80"
+              className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity"
             />
             <img
               src="/manus-storage/pse_banner_afc1f717.png"
               alt="PSE"
-              className="h-8 w-auto object-contain opacity-80"
+              className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity"
             />
           </div>
+        </div>
+
+        {/* ── Copyright ── */}
+        <div className="bg-white border-t border-gray-100 px-6 py-3 text-center">
           <p
-            className="text-center text-xs text-gray-400 mt-4"
+            className="text-xs text-gray-400"
             style={{ fontFamily: "'Nunito', sans-serif" }}
           >
             © 2022 Susuerte ¡siempre te da más!
