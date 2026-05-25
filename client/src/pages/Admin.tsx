@@ -1,22 +1,10 @@
 /**
- * Susuerte - Dashboard Profesional de Phishing Awareness
- * Design: SOC Dashboard / Corporate Security
- * 
- * Funcionalidades:
- *   - Autenticación con contraseña
- *   - Resumen general con 9 métricas clave
- *   - Analítica de interacción avanzada
- *   - Datos técnicos detallados
- *   - Tabla de registros de formularios
- *   - Comportamiento del usuario
- *   - Gráficos y visualizaciones
- *   - Filtros y búsqueda
- *   - Exportación CSV y JSON
+ * Panel Administrativo - Dashboard SOC de Phishing Awareness
+ * Análisis completo de campañas, eventos, usuarios y métricas
  */
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { LogOut, Eye, EyeOff, Download, Filter, Search, BarChart3, Users, MousePointer, TrendingUp } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 interface RegistroUsuario {
   id: string;
@@ -26,623 +14,584 @@ interface RegistroUsuario {
   documento: string;
   verificado: boolean;
   timestamp: string;
-  deviceData?: any;
-  sessionMetrics?: any;
+  deviceData: any;
+  sessionId: string;
 }
 
-interface RegistroClick {
+interface UserEvent {
   id: string;
-  nombre: string;
-  email: string;
-  ip: string;
-  target: string;
+  sessionId: string;
+  eventType: string;
   timestamp: string;
-  deviceData?: any;
+  ipPublica: string;
+  ipPrivada: string;
+  userAgent: string;
+  navegador: string;
+  sistemaOperativo: string;
+  dispositivo: string;
+  tiempoActivo: number;
+  paginaVisitada: string;
+  email?: string;
+  nombre?: string;
+  detalles?: any;
 }
+
+type TabType = 'dashboard' | 'usuarios' | 'eventos' | 'estadisticas' | 'exportar' | 'logs' | 'configuracion';
 
 export default function Admin() {
-  const [autenticado, setAutenticado] = useState(false);
-  const [contrasena, setContrasena] = useState("");
-  const [registrosUsuarios, setRegistrosUsuarios] = useState<RegistroUsuario[]>([]);
-  const [registrosClics, setRegistrosClics] = useState<RegistroClick[]>([]);
-  const [mostrarContrasena, setMostrarContrasena] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [seccionActiva, setSeccionActiva] = useState("resumen");
-  const [busqueda, setBusqueda] = useState("");
-  const [filtroFecha, setFiltroFecha] = useState("");
-  const [filtroDispositivo, setFiltroDispositivo] = useState("");
-  const [paginaActual, setPaginaActual] = useState(1);
-  const itemsPorPagina = 10;
+  const [authenticated, setAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [registros, setRegistros] = useState<RegistroUsuario[]>([]);
+  const [eventos, setEventos] = useState<UserEvent[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDevice, setFilterDevice] = useState('');
+  const [filterBrowser, setFilterBrowser] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Cargar registros del localStorage
+  // Cargar datos al montar
   useEffect(() => {
-    const registrosGuardados = localStorage.getItem("susuerte_registros");
-    if (registrosGuardados) {
-      setRegistrosUsuarios(JSON.parse(registrosGuardados));
-    }
+    const registrosGuardados = localStorage.getItem('susuerte_registros');
+    const eventosGuardados = localStorage.getItem('susuerte_eventos');
 
-    const clicsGuardados = localStorage.getItem("susuerte_clics");
-    if (clicsGuardados) {
-      setRegistrosClics(JSON.parse(clicsGuardados));
-    }
+    if (registrosGuardados) setRegistros(JSON.parse(registrosGuardados));
+    if (eventosGuardados) setEventos(JSON.parse(eventosGuardados));
   }, []);
+
+  // Auto-refresh cada 5 segundos
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const interval = setInterval(() => {
+      const registrosGuardados = localStorage.getItem('susuerte_registros');
+      const eventosGuardados = localStorage.getItem('susuerte_eventos');
+
+      if (registrosGuardados) setRegistros(JSON.parse(registrosGuardados));
+      if (eventosGuardados) setEventos(JSON.parse(eventosGuardados));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [authenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (contrasena === "admin123") {
-      setAutenticado(true);
-      setContrasena("");
+    if (password === 'admin123') {
+      setAuthenticated(true);
+      setPassword('');
     } else {
-      alert("Contraseña incorrecta");
+      alert('Contraseña incorrecta');
     }
   };
 
   const handleLogout = () => {
-    setAutenticado(false);
-    setContrasena("");
+    setAuthenticated(false);
+    setPassword('');
   };
 
-  // Calcular estadísticas generales
-  const totalRegistros = registrosUsuarios.length;
-  const totalClics = registrosClics.length;
-  const ipsUnicas = new Set(registrosClics.map((c) => c.ip)).size;
-  const usuariosUnicos = new Set(registrosUsuarios.map((r) => r.email)).size;
-  
-  // Tasa de conversión
-  const usuariosQueHicieronClic = new Set(registrosClics.map((c) => c.email)).size;
-  const tasaConversion = totalRegistros > 0 ? Math.round((totalRegistros / (usuariosQueHicieronClic || 1)) * 100) : 0;
+  const toggleVerificacion = (id: string) => {
+    const nuevosRegistros = registros.map(r =>
+      r.id === id ? { ...r, verificado: !r.verificado } : r
+    );
+    setRegistros(nuevosRegistros);
+    localStorage.setItem('susuerte_registros', JSON.stringify(nuevosRegistros));
+  };
 
-  // Dispositivos
-  const usuariosMobiles = registrosUsuarios.filter((r) => r.deviceData?.isMobile).length;
-  const usuariosDesktop = registrosUsuarios.filter((r) => r.deviceData?.isDesktop).length;
+  // Calcular métricas
+  const calcularMetricas = () => {
+    const totalClics = eventos.filter(e => e.eventType === 'BUTTON_CLICK').length;
+    const totalRegistros = registros.length;
+    const usuariosUnicos = new Set(eventos.map(e => e.email)).size;
+    const ipsUnicas = new Set(eventos.map(e => e.ipPublica)).size;
+    const usuariosVulnerables = registros.length;
+    const usuariosSospechosos = eventos
+      .filter(e => e.eventType === 'FORM_ABANDON')
+      .map(e => e.email)
+      .filter((v, i, a) => a.indexOf(v) === i).length;
 
-  // Tiempo promedio en página
-  const tiempoPromedio = registrosUsuarios.length > 0
-    ? Math.round(
-        registrosUsuarios.reduce((sum, r) => sum + (r.sessionMetrics?.pageViewTime || 0), 0) /
-          registrosUsuarios.length
-      )
-    : 0;
+    const conversionPhishing = totalClics > 0 
+      ? ((totalRegistros / totalClics) * 100).toFixed(2) 
+      : '0.00';
 
-  // Usuarios que abandonaron formulario
-  const usuariosAbandonaron = registrosClics.length - totalRegistros;
+    const tiempoPromedioPermanencia = eventos.length > 0
+      ? ((eventos.reduce((sum, e) => sum + e.tiempoActivo, 0) / eventos.length) / 1000).toFixed(1)
+      : '0';
 
-  // Filtrar registros
-  const registrosFiltrados = registrosUsuarios.filter((r) => {
-    const coincideBusqueda =
-      r.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      r.email.toLowerCase().includes(busqueda.toLowerCase());
-    const coincideFecha = !filtroFecha || r.timestamp.includes(filtroFecha);
-    const coincideDispositivo = !filtroDispositivo || r.deviceData?.device === filtroDispositivo;
-    return coincideBusqueda && coincideFecha && coincideDispositivo;
-  });
+    const navegadores = eventos.reduce((acc, e) => {
+      acc[e.navegador] = (acc[e.navegador] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-  // Paginación
-  const totalPaginas = Math.ceil(registrosFiltrados.length / itemsPorPagina);
-  const registrosPaginados = registrosFiltrados.slice(
-    (paginaActual - 1) * itemsPorPagina,
-    paginaActual * itemsPorPagina
-  );
+    const navegadorMasUsado = Object.entries(navegadores).length > 0
+      ? Object.entries(navegadores).sort((a, b) => b[1] - a[1])[0][0]
+      : 'Desconocido';
+
+    const sistemaOperativos = eventos.reduce((acc, e) => {
+      acc[e.sistemaOperativo] = (acc[e.sistemaOperativo] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const sistemaOperativoMasUsado = Object.entries(sistemaOperativos).length > 0
+      ? Object.entries(sistemaOperativos).sort((a, b) => b[1] - a[1])[0][0]
+      : 'Desconocido';
+
+    const usuariosMobiles = eventos.filter(e => e.dispositivo === 'Móvil').length;
+    const usuariosDesktop = eventos.filter(e => e.dispositivo === 'Desktop').length;
+
+    return {
+      totalClics,
+      totalRegistros,
+      usuariosUnicos,
+      ipsUnicas,
+      usuariosVulnerables,
+      usuariosSospechosos,
+      conversionPhishing,
+      tiempoPromedioPermanencia: `${tiempoPromedioPermanencia}s`,
+      navegadorMasUsado,
+      sistemaOperativoMasUsado,
+      usuariosMobiles,
+      usuariosDesktop,
+    };
+  };
+
+  const metricas = calcularMetricas();
 
   // Exportar CSV
   const exportarCSV = (datos: any[], nombre: string) => {
-    const headers = Object.keys(datos[0] || {});
-    const csv = [
-      headers.join(","),
-      ...datos.map((row) =>
-        headers.map((header) => {
-          const valor = row[header];
-          if (typeof valor === "object") return `"${JSON.stringify(valor)}"`;
-          return `"${valor}"`;
-        }).join(",")
-      ),
-    ].join("\n");
+    if (datos.length === 0) {
+      alert('No hay datos para exportar');
+      return;
+    }
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    const headers = Object.keys(datos[0]);
+    const csv = [
+      headers.join(','),
+      ...datos.map(row =>
+        headers.map(header => {
+          const valor = row[header];
+          if (typeof valor === 'object') return `"${JSON.stringify(valor)}"`;
+          return `"${valor}"`;
+        }).join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `${nombre}_${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `${nombre}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
   // Exportar JSON
   const exportarJSON = (datos: any[], nombre: string) => {
+    if (datos.length === 0) {
+      alert('No hay datos para exportar');
+      return;
+    }
+
     const json = JSON.stringify(datos, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+    const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `${nombre}_${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `${nombre}_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
   };
 
-  if (!autenticado) {
+  // Filtrar datos
+  const registrosFiltrados = registros.filter(r =>
+    r.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const eventosFiltrados = eventos.filter(e => {
+    let match = true;
+    if (filterDevice && e.dispositivo !== filterDevice) match = false;
+    if (filterBrowser && e.navegador !== filterBrowser) match = false;
+    return match;
+  });
+
+  // Paginación
+  const totalPages = Math.ceil(registrosFiltrados.length / itemsPerPage);
+  const paginatedRegistros = registrosFiltrados.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  if (!authenticated) {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-4"
-        style={{
-          background: "linear-gradient(135deg, #0d1117 0%, #0f1e3d 50%, #0d1117 100%)",
-        }}
+        style={{ background: 'linear-gradient(135deg, #0d1117 0%, #0f1e3d 50%, #0d1117 100%)' }}
       >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8"
+          className="w-full max-w-md bg-white rounded-lg shadow-2xl p-8"
         >
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Panel Admin</h1>
-          <p className="text-gray-500 mb-6">Acceso restringido</p>
-
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Panel Administrativo</h1>
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
-              <div className="relative">
-                <input
-                  type={mostrarContrasena ? "text" : "password"}
-                  placeholder="Ingresa la contraseña"
-                  value={contrasena}
-                  onChange={(e) => setContrasena(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                />
-                <button
-                  type="button"
-                  onClick={() => setMostrarContrasena(!mostrarContrasena)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  {mostrarContrasena ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ingresa la contraseña"
+              />
             </div>
-
-            <motion.button
+            <button
               type="submit"
-              whileTap={{ scale: 0.97 }}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition"
             >
               Acceder
-            </motion.button>
+            </button>
           </form>
-
-          <p className="text-xs text-gray-400 mt-4 text-center">
-            Contraseña de demostración: <strong>admin123</strong>
-          </p>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100">
-      {/* Sidebar */}
-      <motion.div
-        initial={{ x: -300 }}
-        animate={{ x: 0 }}
-        className={`${sidebarOpen ? "w-64" : "w-20"} bg-gray-800 border-r border-gray-700 transition-all duration-300 flex flex-col`}
-      >
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          {sidebarOpen && <h2 className="font-bold text-lg">Dashboard</h2>}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            ☰
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Header */}
+      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard SOC - Phishing Awareness</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold transition"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 space-y-2">
           {[
-            { id: "resumen", label: "Resumen", icon: "📊" },
-            { id: "interaccion", label: "Interacción", icon: "🖱️" },
-            { id: "tecnico", label: "Datos Técnicos", icon: "⚙️" },
-            { id: "formularios", label: "Formularios", icon: "📋" },
-            { id: "comportamiento", label: "Comportamiento", icon: "📈" },
-            { id: "graficos", label: "Gráficos", icon: "📉" },
-          ].map((item) => (
-            <motion.button
-              key={item.id}
+            { id: 'dashboard', label: '📊 Dashboard' },
+            { id: 'usuarios', label: '👥 Usuarios' },
+            { id: 'eventos', label: '📋 Eventos' },
+            { id: 'estadisticas', label: '📈 Estadísticas' },
+            { id: 'exportar', label: '💾 Exportar' },
+            { id: 'logs', label: '📝 Logs' },
+            { id: 'configuracion', label: '⚙️ Configuración' },
+          ].map(tab => (
+            <button
+              key={tab.id}
               onClick={() => {
-                setSeccionActiva(item.id);
-                setPaginaActual(1);
+                setActiveTab(tab.id as TabType);
+                setCurrentPage(1);
               }}
-              whileTap={{ scale: 0.95 }}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
-                seccionActiva === item.id
-                  ? "bg-blue-600 text-white"
-                  : "hover:bg-gray-700 text-gray-300"
+              className={`w-full text-left px-4 py-2 rounded-lg font-semibold transition ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-700'
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
-              {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-            </motion.button>
+              {tab.label}
+            </button>
           ))}
-        </nav>
-
-        <div className="p-4 border-t border-gray-700">
-          <motion.button
-            onClick={handleLogout}
-            whileTap={{ scale: 0.95 }}
-            className="w-full flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-sm font-semibold"
-          >
-            <LogOut size={18} />
-            {sidebarOpen && "Cerrar Sesión"}
-          </motion.button>
         </div>
-      </motion.div>
 
-      {/* Contenido Principal */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-1">Panel de Administración</h1>
-              <p className="text-gray-400">Visualiza y verifica todos los datos capturados</p>
-            </div>
-            <motion.button
-              onClick={handleLogout}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-            >
-              <LogOut size={18} />
-              Cerrar Sesión
-            </motion.button>
-          </div>
+        {/* Main Content */}
+        <div className="flex-1 p-6 overflow-auto">
+          {/* Dashboard Tab */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-6">Dashboard Ejecutivo</h2>
 
-          {/* SECCIÓN: RESUMEN GENERAL */}
-          {seccionActiva === "resumen" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              <h2 className="text-2xl font-bold mb-4">Resumen General</h2>
-
-              {/* Cards de Estadísticas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Métricas Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Total de Clics", valor: totalClics, color: "bg-blue-600", icon: "🖱️" },
-                  { label: "Total de Registros", valor: totalRegistros, color: "bg-green-600", icon: "📝" },
-                  { label: "IPs Únicas", valor: ipsUnicas, color: "bg-purple-600", icon: "🌐" },
-                  { label: "Usuarios Únicos", valor: usuariosUnicos, color: "bg-indigo-600", icon: "👥" },
-                  { label: "Tasa de Conversión", valor: `${tasaConversion}%`, color: "bg-orange-600", icon: "📊" },
-                  { label: "Usuarios Móviles", valor: usuariosMobiles, color: "bg-pink-600", icon: "📱" },
-                  { label: "Usuarios Desktop", valor: usuariosDesktop, color: "bg-cyan-600", icon: "🖥️" },
-                  { label: "Tiempo Promedio (s)", valor: tiempoPromedio, color: "bg-yellow-600", icon: "⏱️" },
-                  { label: "Abandonaron", valor: usuariosAbandonaron, color: "bg-red-600", icon: "❌" },
-                ].map((stat, idx) => (
+                  { label: 'Total de Clics', value: metricas.totalClics, icon: '🖱️' },
+                  { label: 'Total de Registros', value: metricas.totalRegistros, icon: '📝' },
+                  { label: 'Usuarios Únicos', value: metricas.usuariosUnicos, icon: '👤' },
+                  { label: 'IPs Únicas', value: metricas.ipsUnicas, icon: '🌐' },
+                  { label: 'Usuarios Vulnerables', value: metricas.usuariosVulnerables, icon: '⚠️' },
+                  { label: 'Usuarios Sospechosos', value: metricas.usuariosSospechosos, icon: '🚨' },
+                  { label: 'Conversión Phishing', value: `${metricas.conversionPhishing}%`, icon: '📊' },
+                  { label: 'Tiempo Promedio', value: metricas.tiempoPromedioPermanencia, icon: '⏱️' },
+                  { label: 'Navegador Más Usado', value: metricas.navegadorMasUsado, icon: '🌐' },
+                  { label: 'SO Más Usado', value: metricas.sistemaOperativoMasUsado, icon: '💻' },
+                  { label: 'Usuarios Móviles', value: metricas.usuariosMobiles, icon: '📱' },
+                  { label: 'Usuarios Desktop', value: metricas.usuariosDesktop, icon: '🖥️' },
+                ].map((metric, idx) => (
                   <motion.div
                     key={idx}
-                    whileHover={{ scale: 1.05 }}
-                    className={`${stat.color} rounded-lg p-6 text-white shadow-lg`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="bg-gray-800 border border-gray-700 rounded-lg p-4"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm opacity-90">{stat.label}</p>
-                        <p className="text-3xl font-bold mt-2">{stat.valor}</p>
-                      </div>
-                      <span className="text-4xl">{stat.icon}</span>
-                    </div>
+                    <div className="text-2xl mb-2">{metric.icon}</div>
+                    <p className="text-gray-400 text-sm">{metric.label}</p>
+                    <p className="text-2xl font-bold text-blue-400">{metric.value}</p>
                   </motion.div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
 
-          {/* SECCIÓN: ANALÍTICA DE INTERACCIÓN */}
-          {seccionActiva === "interaccion" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              <h2 className="text-2xl font-bold mb-4">Analítica de Interacción</h2>
+          {/* Usuarios Tab */}
+          {activeTab === 'usuarios' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-6">Registros de Usuarios</h2>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Conteo de Clics por Usuario */}
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <MousePointer size={20} /> Conteo de Clics por Usuario
-                  </h3>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {Object.entries(
-                      registrosClics.reduce((acc, clic) => {
-                        const email = clic.email;
-                        acc[email] = (acc[email] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([email, count]) => (
-                        <div key={email} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                          <span className="text-sm">{email}</span>
-                          <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-semibold">{count}</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* Usuarios por Estado */}
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <TrendingUp size={20} /> Usuarios por Estado
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                      <span className="text-sm">Solo Clic</span>
-                      <span className="bg-yellow-600 px-3 py-1 rounded-full text-sm font-semibold">
-                        {usuariosQueHicieronClic - totalRegistros}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                      <span className="text-sm">Formulario Completado</span>
-                      <span className="bg-green-600 px-3 py-1 rounded-full text-sm font-semibold">{totalRegistros}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                      <span className="text-sm">Usuarios Únicos</span>
-                      <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-semibold">{usuariosUnicos}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* SECCIÓN: DATOS TÉCNICOS */}
-          {seccionActiva === "tecnico" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              <h2 className="text-2xl font-bold mb-4">Datos Técnicos</h2>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Navegadores Más Usados */}
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                  <h3 className="text-lg font-semibold mb-4">Navegadores Más Usados</h3>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      registrosUsuarios.reduce((acc, r) => {
-                        const browser = r.deviceData?.browser || "Desconocido";
-                        acc[browser] = (acc[browser] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([browser, count]) => (
-                        <div key={browser} className="flex items-center justify-between">
-                          <span className="text-sm">{browser}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-blue-500 h-2 rounded-full"
-                                style={{ width: `${(count / totalRegistros) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-semibold w-8">{count}</span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* Sistemas Operativos */}
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                  <h3 className="text-lg font-semibold mb-4">Sistemas Operativos</h3>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      registrosUsuarios.reduce((acc, r) => {
-                        const os = r.deviceData?.os || "Desconocido";
-                        acc[os] = (acc[os] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([os, count]) => (
-                        <div key={os} className="flex items-center justify-between">
-                          <span className="text-sm">{os}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-green-500 h-2 rounded-full"
-                                style={{ width: `${(count / totalRegistros) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-semibold w-8">{count}</span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* Dispositivos */}
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                  <h3 className="text-lg font-semibold mb-4">Tipos de Dispositivos</h3>
-                  <div className="space-y-2">
-                    {Object.entries(
-                      registrosUsuarios.reduce((acc, r) => {
-                        const device = r.deviceData?.device || "Desconocido";
-                        acc[device] = (acc[device] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([device, count]) => (
-                        <div key={device} className="flex items-center justify-between">
-                          <span className="text-sm">{device}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-purple-500 h-2 rounded-full"
-                                style={{ width: `${(count / totalRegistros) * 100}%` }}
-                              />
-                            </div>
-                            <span className="text-sm font-semibold w-8">{count}</span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* Resoluciones de Pantalla */}
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                  <h3 className="text-lg font-semibold mb-4">Resoluciones de Pantalla</h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {Object.entries(
-                      registrosUsuarios.reduce((acc, r) => {
-                        const res = r.deviceData?.screenResolution || "Desconocida";
-                        acc[res] = (acc[res] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 10)
-                      .map(([res, count]) => (
-                        <div key={res} className="flex items-center justify-between text-sm">
-                          <span>{res}</span>
-                          <span className="bg-gray-700 px-2 py-1 rounded">{count}</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* SECCIÓN: FORMULARIOS */}
-          {seccionActiva === "formularios" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">Registros de Formularios</h2>
-                <div className="flex gap-2">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => exportarCSV(registrosFiltrados, "registros")}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                  >
-                    <Download size={18} />
-                    Exportar CSV
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => exportarJSON(registrosFiltrados, "registros")}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                  >
-                    <Download size={18} />
-                    Exportar JSON
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Filtros */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Buscar</label>
-                  <div className="relative">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input
-                      type="text"
-                      placeholder="Nombre, email..."
-                      value={busqueda}
-                      onChange={(e) => {
-                        setBusqueda(e.target.value);
-                        setPaginaActual(1);
-                      }}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 pl-10 text-sm outline-none focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Fecha</label>
-                  <input
-                    type="date"
-                    value={filtroFecha}
-                    onChange={(e) => {
-                      setFiltroFecha(e.target.value);
-                      setPaginaActual(1);
-                    }}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Dispositivo</label>
-                  <select
-                    value={filtroDispositivo}
-                    onChange={(e) => {
-                      setFiltroDispositivo(e.target.value);
-                      setPaginaActual(1);
-                    }}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
-                  >
-                    <option value="">Todos</option>
-                    <option value="Móvil">Móvil</option>
-                    <option value="Desktop">Desktop</option>
-                    <option value="Tablet">Tablet</option>
-                  </select>
-                </div>
+              {/* Búsqueda */}
+              <div className="flex gap-4 mb-4">
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o email..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={() => exportarCSV(registrosFiltrados, 'usuarios')}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-semibold transition"
+                >
+                  📥 CSV
+                </button>
               </div>
 
               {/* Tabla */}
-              <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-700 border-b border-gray-600">
-                      <tr>
-                        <th className="px-6 py-3 text-left font-semibold">Nombre</th>
-                        <th className="px-6 py-3 text-left font-semibold">Email</th>
-                        <th className="px-6 py-3 text-left font-semibold">IP Pública</th>
-                        <th className="px-6 py-3 text-left font-semibold">Navegador</th>
-                        <th className="px-6 py-3 text-left font-semibold">Dispositivo</th>
-                        <th className="px-6 py-3 text-left font-semibold">Timestamp</th>
+              <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Nombre</th>
+                      <th className="px-4 py-3 text-left">Email</th>
+                      <th className="px-4 py-3 text-left">Teléfono</th>
+                      <th className="px-4 py-3 text-left">Documento</th>
+                      <th className="px-4 py-3 text-left">Estado</th>
+                      <th className="px-4 py-3 text-left">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedRegistros.map(registro => (
+                      <tr key={registro.id} className="border-t border-gray-700 hover:bg-gray-750">
+                        <td className="px-4 py-3">{registro.nombre}</td>
+                        <td className="px-4 py-3">{registro.email}</td>
+                        <td className="px-4 py-3">{registro.telefono}</td>
+                        <td className="px-4 py-3">{registro.documento}</td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              registro.verificado
+                                ? 'bg-green-900 text-green-300'
+                                : 'bg-yellow-900 text-yellow-300'
+                            }`}
+                          >
+                            {registro.verificado ? '✓ Verificado' : '⏳ Pendiente'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleVerificacion(registro.id)}
+                            className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm font-semibold transition"
+                          >
+                            {registro.verificado ? 'Desverificar' : 'Verificar'}
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700">
-                      {registrosPaginados.map((reg) => (
-                        <tr key={reg.id} className="hover:bg-gray-700 transition-colors">
-                          <td className="px-6 py-3">{reg.nombre}</td>
-                          <td className="px-6 py-3 text-blue-400">{reg.email}</td>
-                          <td className="px-6 py-3 font-mono text-xs">{reg.deviceData?.publicIP || "-"}</td>
-                          <td className="px-6 py-3">{reg.deviceData?.browser || "-"}</td>
-                          <td className="px-6 py-3">{reg.deviceData?.device || "-"}</td>
-                          <td className="px-6 py-3 text-xs text-gray-400">
-                            {new Date(reg.timestamp).toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                {/* Paginación */}
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
-                  <span className="text-sm text-gray-400">
-                    Mostrando {(paginaActual - 1) * itemsPorPagina + 1} a{" "}
-                    {Math.min(paginaActual * itemsPorPagina, registrosFiltrados.length)} de{" "}
-                    {registrosFiltrados.length}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setPaginaActual(Math.max(1, paginaActual - 1))}
-                      disabled={paginaActual === 1}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg transition-colors"
-                    >
-                      Anterior
-                    </button>
-                    <span className="px-4 py-2 text-sm">
-                      {paginaActual} / {totalPaginas}
-                    </span>
-                    <button
-                      onClick={() => setPaginaActual(Math.min(totalPaginas, paginaActual + 1))}
-                      disabled={paginaActual === totalPaginas}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg transition-colors"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
+              {/* Paginación */}
+              <div className="flex justify-between items-center">
+                <p className="text-gray-400">
+                  Página {currentPage} de {totalPages} ({registrosFiltrados.length} registros)
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 px-4 py-2 rounded-lg font-semibold transition"
+                  >
+                    ← Anterior
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 px-4 py-2 rounded-lg font-semibold transition"
+                  >
+                    Siguiente →
+                  </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
-          {/* SECCIONES PLACEHOLDER */}
-          {["comportamiento", "graficos"].includes(seccionActiva) && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-gray-800 rounded-lg p-8 border border-gray-700 text-center">
-              <BarChart3 size={48} className="mx-auto mb-4 text-gray-500" />
-              <h2 className="text-2xl font-bold mb-2">
-                {seccionActiva === "comportamiento" ? "Comportamiento del Usuario" : "Gráficos y Visualizaciones"}
-              </h2>
-              <p className="text-gray-400">Esta sección está en desarrollo</p>
-            </motion.div>
+          {/* Eventos Tab */}
+          {activeTab === 'eventos' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-6">Registro de Eventos</h2>
+
+              {/* Filtros */}
+              <div className="flex gap-4 mb-4">
+                <select
+                  value={filterDevice}
+                  onChange={(e) => {
+                    setFilterDevice(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos los dispositivos</option>
+                  <option value="Móvil">Móvil</option>
+                  <option value="Desktop">Desktop</option>
+                  <option value="Tablet">Tablet</option>
+                </select>
+
+                <select
+                  value={filterBrowser}
+                  onChange={(e) => {
+                    setFilterBrowser(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos los navegadores</option>
+                  {Array.from(new Set(eventos.map(e => e.navegador))).map(nav => (
+                    <option key={nav} value={nav}>{nav}</option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => exportarCSV(eventosFiltrados, 'eventos')}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-semibold transition"
+                >
+                  📥 CSV
+                </button>
+              </div>
+
+              {/* Tabla de Eventos */}
+              <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Timestamp</th>
+                      <th className="px-4 py-3 text-left">Tipo</th>
+                      <th className="px-4 py-3 text-left">Email</th>
+                      <th className="px-4 py-3 text-left">IP Pública</th>
+                      <th className="px-4 py-3 text-left">IP Privada</th>
+                      <th className="px-4 py-3 text-left">Navegador</th>
+                      <th className="px-4 py-3 text-left">Dispositivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eventosFiltrados.slice(0, 50).map(evento => (
+                      <tr key={evento.id} className="border-t border-gray-700 hover:bg-gray-750">
+                        <td className="px-4 py-3 text-xs">{new Date(evento.timestamp).toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-1 bg-blue-900 text-blue-300 rounded text-xs font-semibold">
+                            {evento.eventType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{evento.email || 'N/A'}</td>
+                        <td className="px-4 py-3 text-xs">{evento.ipPublica}</td>
+                        <td className="px-4 py-3 text-xs">{evento.ipPrivada}</td>
+                        <td className="px-4 py-3 text-xs">{evento.navegador}</td>
+                        <td className="px-4 py-3 text-xs">{evento.dispositivo}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Exportar Tab */}
+          {activeTab === 'exportar' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-6">Exportar Datos</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => exportarCSV(registros, 'usuarios')}
+                  className="bg-green-600 hover:bg-green-700 px-6 py-4 rounded-lg font-semibold transition text-lg"
+                >
+                  📥 Usuarios (CSV)
+                </button>
+                <button
+                  onClick={() => exportarCSV(eventos, 'eventos')}
+                  className="bg-green-600 hover:bg-green-700 px-6 py-4 rounded-lg font-semibold transition text-lg"
+                >
+                  📥 Eventos (CSV)
+                </button>
+                <button
+                  onClick={() => exportarJSON(registros, 'usuarios')}
+                  className="bg-blue-600 hover:bg-blue-700 px-6 py-4 rounded-lg font-semibold transition text-lg"
+                >
+                  📥 Usuarios (JSON)
+                </button>
+                <button
+                  onClick={() => exportarJSON(eventos, 'eventos')}
+                  className="bg-blue-600 hover:bg-blue-700 px-6 py-4 rounded-lg font-semibold transition text-lg"
+                >
+                  📥 Eventos (JSON)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Logs Tab */}
+          {activeTab === 'logs' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-6">Logs del Sistema</h2>
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <p className="text-gray-400">
+                  Total de eventos registrados: <span className="text-blue-400 font-bold">{eventos.length}</span>
+                </p>
+                <p className="text-gray-400 mt-2">
+                  Total de registros: <span className="text-blue-400 font-bold">{registros.length}</span>
+                </p>
+                <p className="text-gray-400 mt-2">
+                  Última actualización: <span className="text-blue-400 font-bold">{new Date().toLocaleString()}</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Configuración Tab */}
+          {activeTab === 'configuracion' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-6">Configuración</h2>
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <button
+                  onClick={() => {
+                    if (confirm('¿Estás seguro de que deseas limpiar todos los datos?')) {
+                      localStorage.removeItem('susuerte_registros');
+                      localStorage.removeItem('susuerte_eventos');
+                      setRegistros([]);
+                      setEventos([]);
+                      alert('Datos limpiados correctamente');
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-semibold transition"
+                >
+                  🗑️ Limpiar Todos los Datos
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Estadísticas Tab */}
+          {activeTab === 'estadisticas' && (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold mb-6">Análisis y Estadísticas</h2>
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <p className="text-gray-400">Sección de estadísticas avanzadas en construcción...</p>
+              </div>
+            </div>
           )}
         </div>
       </div>

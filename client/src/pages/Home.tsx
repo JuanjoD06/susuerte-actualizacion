@@ -15,7 +15,8 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { captureDeviceData, initializeSessionMetrics, calculatePageViewTime, calculateScrollDepth } from "@/lib/deviceDetection";
+import { initializeSession, trackEvent } from "@/lib/eventTracking";
+import { captureDeviceData } from "@/lib/deviceDetection";
 
 interface FormData {
   name: string;
@@ -33,7 +34,7 @@ interface RegistroUsuario {
   verificado: boolean;
   timestamp: string;
   deviceData: any;
-  sessionMetrics: any;
+  sessionId: string;
 }
 
 export default function Home() {
@@ -46,127 +47,56 @@ export default function Home() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deviceData, setDeviceData] = useState<any>(null);
-  const [sessionMetrics, setSessionMetrics] = useState<any>(null);
-  const [sessionStart] = useState(Date.now());
+  const [sessionId, setSessionId] = useState<string>("");
+  const [formStarted, setFormStarted] = useState(false);
 
-  // Capturar datos técnicos al cargar la página
+  // Inicializar sesión y capturar datos técnicos
   useEffect(() => {
-    const captureData = async () => {
+    const initializeUser = async () => {
+      // Inicializar sesión de eventos
+      const newSessionId = initializeSession();
+      setSessionId(newSessionId);
+
+      // Capturar datos técnicos
       const device = await captureDeviceData();
       setDeviceData(device);
+
+      // Registrar visita de página
+      await trackEvent('PAGE_VISIT', {
+        paginaVisitada: window.location.pathname,
+      });
     };
-    captureData();
+
+    initializeUser();
   }, []);
 
-  // Inicializar métricas de sesión
-  useEffect(() => {
-    const metrics = initializeSessionMetrics();
-    setSessionMetrics(metrics);
-
-    // Tracking de scroll
-    const handleScroll = () => {
-      setSessionMetrics((prev: any) => ({
-        ...prev,
-        scrollDepth: calculateScrollDepth(),
-      }));
-    };
-
-    // Tracking de focus/blur
-    const handleFocus = () => {
-      setSessionMetrics((prev: any) => ({
-        ...prev,
-        focusEvents: (prev?.focusEvents || 0) + 1,
-      }));
-    };
-
-    const handleBlur = () => {
-      setSessionMetrics((prev: any) => ({
-        ...prev,
-        blurEvents: (prev?.blurEvents || 0) + 1,
-      }));
-    };
-
-    // Tracking de copy/paste
-    const handleCopyPaste = () => {
-      setSessionMetrics((prev: any) => ({
-        ...prev,
-        copyPasteEvents: (prev?.copyPasteEvents || 0) + 1,
-      }));
-    };
-
-    // Tracking de clics
-    const handleClickTracking = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).getAttribute("data-track");
-      if (target) {
-        const clickData = {
-          id: Date.now().toString(),
-          nombre: formData.name || "Anónimo",
-          email: formData.email || "Anónimo",
-          ip: deviceData?.publicIP || "Desconocida",
-          target: target,
-          timestamp: new Date().toISOString(),
-          deviceData: deviceData,
-        };
-
-        const clicsGuardados = localStorage.getItem("susuerte_clics");
-        const clics = clicsGuardados ? JSON.parse(clicsGuardados) : [];
-        clics.push(clickData);
-        localStorage.setItem("susuerte_clics", JSON.stringify(clics));
-
-        setSessionMetrics((prev: any) => ({
-          ...prev,
-          clickCount: (prev?.clickCount || 0) + 1,
-        }));
-      }
-    };
-
-    // Tracking de keypresses
-    const handleKeyPress = () => {
-      setSessionMetrics((prev: any) => ({
-        ...prev,
-        keyPressCount: (prev?.keyPressCount || 0) + 1,
-      }));
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
-    window.addEventListener("copy", handleCopyPaste);
-    window.addEventListener("paste", handleCopyPaste);
-    document.addEventListener("click", handleClickTracking);
-    window.addEventListener("keypress", handleKeyPress);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("blur", handleBlur);
-      window.removeEventListener("copy", handleCopyPaste);
-      window.removeEventListener("paste", handleCopyPaste);
-      document.removeEventListener("click", handleClickTracking);
-      window.removeEventListener("keypress", handleKeyPress);
-    };
-  }, [formData, deviceData]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
-    setSessionMetrics((prev: any) => ({
-      ...prev,
-      formInteractions: (prev?.formInteractions || 0) + 1,
-    }));
+    const { id, value } = e.target;
+    setFormData({ ...formData, [id]: value });
+
+    // Registrar inicio de formulario si es la primera interacción
+    if (!formStarted) {
+      setFormStarted(true);
+      trackEvent('FORM_START', {
+        campo: id,
+      });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      // Calcular métricas finales
-      const finalMetrics = {
-        ...sessionMetrics,
-        pageViewTime: calculatePageViewTime(sessionStart),
-        formCompletionPercentage: 100,
-      };
 
-      // Guardar en localStorage
+    setTimeout(async () => {
+      // Registrar envío de formulario
+      await trackEvent('FORM_SUBMIT', {
+        nombre: formData.name,
+        email: formData.email,
+        telefono: formData.phone,
+        documento: formData.document,
+      });
+
+      // Guardar registro en localStorage
       const registrosGuardados = localStorage.getItem("susuerte_registros");
       const registros = registrosGuardados ? JSON.parse(registrosGuardados) : [];
 
@@ -179,15 +109,11 @@ export default function Home() {
         verificado: false,
         timestamp: new Date().toISOString(),
         deviceData: deviceData,
-        sessionMetrics: finalMetrics,
+        sessionId: sessionId,
       };
 
       registros.push(nuevoRegistro);
       localStorage.setItem("susuerte_registros", JSON.stringify(registros));
-
-      // Guardar datos del usuario actual para tracking de clics
-      localStorage.setItem("susuerte_current_user_name", formData.name);
-      localStorage.setItem("susuerte_current_user_email", formData.email);
 
       setLoading(false);
       setSubmitted(true);
@@ -299,7 +225,6 @@ export default function Home() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  data-track="input-nombre"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{
                     fontFamily: "'Nunito', sans-serif",
@@ -332,7 +257,6 @@ export default function Home() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  data-track="input-email"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                   onFocus={(e) => {
@@ -361,7 +285,6 @@ export default function Home() {
                   placeholder="Tu número de teléfono"
                   value={formData.phone}
                   onChange={handleChange}
-                  data-track="input-phone"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                   onFocus={(e) => {
@@ -390,7 +313,6 @@ export default function Home() {
                   placeholder="Tu número de documento"
                   value={formData.document}
                   onChange={handleChange}
-                  data-track="input-document"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                   onFocus={(e) => {
@@ -409,7 +331,6 @@ export default function Home() {
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.97 }}
-                data-track="btn-submit"
                 className="w-full py-3 rounded-lg font-bold text-base mt-1 transition-all duration-200"
                 style={{
                   fontFamily: "'Nunito', sans-serif",
@@ -444,8 +365,6 @@ export default function Home() {
               >
                 Al enviar, aceptas nuestros términos y condiciones.
               </p>
-
-
             </form>
           )}
         </div>
