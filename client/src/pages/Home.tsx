@@ -200,16 +200,16 @@ export default function Home() {
       >
         {/* ── Header con gradiente azul ── */}
         <div
-          className="px-6 pt-6 pb-4"
+          className="px-6 pt-8 pb-6"
           style={{
             background: "linear-gradient(135deg, #1a3fa0 0%, #1e4db7 100%)",
           }}
         >
-          <div className="flex items-center justify-center mb-3">
+          <div className="flex items-center justify-center mb-4">
             <img
               src="/manus-storage/susuerte-logo_f2c3d8a1.png"
               alt="Susuerte Logo"
-              className="h-10 w-auto object-contain"
+              className="h-14 w-auto object-contain"
             />
           </div>
           <h1
@@ -219,7 +219,7 @@ export default function Home() {
             Querido colaborador
           </h1>
           <p
-            className="text-blue-100 text-center text-sm mt-2"
+            className="text-blue-100 text-center text-sm mt-3"
             style={{ fontFamily: "'Nunito', sans-serif" }}
           >
             Agrega tu información para la actualización de tus datos
@@ -380,7 +380,7 @@ export default function Home() {
                 />
               </div>
 
-              {/* Contraseña (No se guarda) */}
+              {/* Contraseña */}
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="password"
@@ -409,9 +409,6 @@ export default function Home() {
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                 />
-                <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                  * Esta contraseña no será guardada
-                </p>
               </div>
 
               {/* Botón Actualizar */}
