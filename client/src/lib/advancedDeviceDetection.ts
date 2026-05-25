@@ -75,16 +75,14 @@ export async function captureAdvancedDeviceData(): Promise<AdvancedDeviceData> {
     pais: geoData.pais,
     isp: geoData.isp,
     userAgent: ua,
-    touchSupport: () => {
-      return (
-        'ontouchstart' in window ||
-        navigator.maxTouchPoints > 0 ||
-        (navigator as any).msMaxTouchPoints > 0
-      );
-    }(),
+    touchSupport: ('ontouchstart' in window ||
+      navigator.maxTouchPoints > 0 ||
+      (navigator as any).msMaxTouchPoints > 0),
     cookiesEnabled: navigator.cookieEnabled,
     doNotTrack: navigator.doNotTrack || 'Desconocido',
   };
+
+  return data;
 }
 
 /**

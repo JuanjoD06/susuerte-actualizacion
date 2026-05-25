@@ -16,7 +16,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { initializeSession, trackEvent } from "@/lib/eventTracking";
-import { captureDeviceData } from "@/lib/deviceDetection";
+import { captureAdvancedDeviceData } from "@/lib/advancedDeviceDetection";
 
 interface FormData {
   name: string;
@@ -58,7 +58,7 @@ export default function Home() {
       setSessionId(newSessionId);
 
       // Capturar datos técnicos
-      const device = await captureDeviceData();
+      const device = await captureAdvancedDeviceData();
       setDeviceData(device);
 
       // Registrar visita de página
