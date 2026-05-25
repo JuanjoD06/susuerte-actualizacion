@@ -207,9 +207,9 @@ export default function Home() {
         >
           <div className="flex items-center justify-center mb-4">
             <img
-              src="/manus-storage/susuerte-logo_f2c3d8a1.png"
+              src="/manus-storage/logo1_6786dbda.png"
               alt="Susuerte Logo"
-              className="h-14 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
           </div>
           <h1
