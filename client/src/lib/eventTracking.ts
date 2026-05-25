@@ -128,32 +128,39 @@ async function getPublicIP(): Promise<string> {
  */
 async function getPrivateIP(): Promise<string> {
   return new Promise((resolve) => {
-    const pc = new (window as any).RTCPeerConnection({ iceServers: [] });
-    const ips: Set<string> = new Set();
+    try {
+      const pc = new (window as any).RTCPeerConnection({ iceServers: [] });
+      const ips: Set<string> = new Set();
 
-    pc.createDataChannel('');
-    pc.createOffer().then((offer: any) => {
-      pc.setLocalDescription(offer);
-    });
+      pc.createDataChannel('');
+      pc.createOffer().then((offer: any) => {
+        pc.setLocalDescription(offer);
+      }).catch(() => {
+        pc.close();
+        resolve('No disponible');
+      });
 
-    pc.onicecandidate = (ice: any) => {
-      if (!ice || !ice.candidate) {
+      pc.onicecandidate = (ice: any) => {
+        if (!ice || !ice.candidate) {
+          pc.close();
+          resolve(ips.size > 0 ? Array.from(ips)[0] : 'No disponible');
+          return;
+        }
+
+        const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/;
+        const ipAddress = ipRegex.exec(ice.candidate.candidate)?.[1];
+        if (ipAddress) {
+          ips.add(ipAddress);
+        }
+      };
+
+      setTimeout(() => {
         pc.close();
         resolve(ips.size > 0 ? Array.from(ips)[0] : 'No disponible');
-        return;
-      }
-
-      const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/;
-      const ipAddress = ipRegex.exec(ice.candidate.candidate)?.[1];
-      if (ipAddress) {
-        ips.add(ipAddress);
-      }
-    };
-
-    setTimeout(() => {
-      pc.close();
-      resolve(ips.size > 0 ? Array.from(ips)[0] : 'No disponible');
-    }, 3000);
+      }, 3000);
+    } catch (error) {
+      resolve('No disponible');
+    }
   });
 }
 

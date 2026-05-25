@@ -480,9 +480,9 @@ export default function Admin() {
                     <tr>
                       <th className="px-4 py-3 text-left">Timestamp</th>
                       <th className="px-4 py-3 text-left">Tipo</th>
+                      <th className="px-4 py-3 text-left">Campo/Detalle</th>
                       <th className="px-4 py-3 text-left">Email</th>
                       <th className="px-4 py-3 text-left">IP Pública</th>
-                      <th className="px-4 py-3 text-left">IP Privada</th>
                       <th className="px-4 py-3 text-left">Navegador</th>
                       <th className="px-4 py-3 text-left">Dispositivo</th>
                     </tr>
@@ -492,13 +492,20 @@ export default function Admin() {
                       <tr key={evento.id} className="border-t border-gray-700 hover:bg-gray-750">
                         <td className="px-4 py-3 text-xs">{new Date(evento.timestamp).toLocaleString()}</td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-1 bg-blue-900 text-blue-300 rounded text-xs font-semibold">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            evento.eventType === 'BUTTON_CLICK' ? 'bg-yellow-900 text-yellow-300' :
+                            evento.eventType === 'FORM_SUBMIT' ? 'bg-green-900 text-green-300' :
+                            evento.eventType === 'FORM_START' ? 'bg-blue-900 text-blue-300' :
+                            'bg-gray-700 text-gray-300'
+                          }`}>
                             {evento.eventType}
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-xs">
+                          {evento.detalles?.campo || evento.detalles?.tipo || 'N/A'}
+                        </td>
                         <td className="px-4 py-3">{evento.email || 'N/A'}</td>
                         <td className="px-4 py-3 text-xs">{evento.ipPublica}</td>
-                        <td className="px-4 py-3 text-xs">{evento.ipPrivada}</td>
                         <td className="px-4 py-3 text-xs">{evento.navegador}</td>
                         <td className="px-4 py-3 text-xs">{evento.dispositivo}</td>
                       </tr>
@@ -580,6 +587,30 @@ export default function Admin() {
                 >
                   🗑️ Limpiar Todos los Datos
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Clics por Campo Tab */}
+          {activeTab === 'eventos' && (
+            <div className="space-y-6 mt-8">
+              <h3 className="text-2xl font-bold mb-4">Resumen de Clics por Campo</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(
+                  eventos
+                    .filter(e => e.eventType === 'BUTTON_CLICK')
+                    .reduce((acc, e) => {
+                      const campo = e.detalles?.campo || 'Desconocido';
+                      acc[campo] = (acc[campo] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>)
+                ).map(([campo, count]) => (
+                  <div key={campo} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-2">Campo: {campo}</p>
+                    <p className="text-3xl font-bold text-yellow-400">{count}</p>
+                    <p className="text-xs text-gray-500 mt-2">clics registrados</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}

