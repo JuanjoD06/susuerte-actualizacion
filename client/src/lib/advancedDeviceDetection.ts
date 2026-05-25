@@ -81,8 +81,6 @@ export async function captureAdvancedDeviceData(): Promise<AdvancedDeviceData> {
     cookiesEnabled: navigator.cookieEnabled,
     doNotTrack: navigator.doNotTrack || 'Desconocido',
   };
-
-  return data;
 }
 
 /**
