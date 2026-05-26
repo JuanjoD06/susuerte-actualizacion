@@ -32,6 +32,13 @@
 - [x] Agregar tests para exportación CSV
 - [x] Refactorizar exportación CSV en utilidad testeable
 
+## Features Completadas (Fase 3)
+- [x] Agregar UI para verificación de email
+- [x] Página /verify-email con soporte para token en URL
+- [x] Formulario para solicitar enlace de verificación
+- [x] Manejo de estados (idle, loading, success, error, token_generated)
+- [x] Mostrar token generado con opción de copiar enlace
+- [x] Feedback veraz en la UI (no afirma envío si solo genera token)
+
 ## Features Pendientes (Prioridad Media)
 - [ ] Implementar envío real de emails de verificación
-- [ ] Agregar UI para verificación de email

@@ -80,15 +80,17 @@ export const appRouter = router({
 
     requestEmailVerification: publicProcedure
       .input(z.object({
-        registroId: z.number(),
+        email: z.string().email(),
       }))
       .mutation(async ({ input }) => {
-        const registro = await getSusuertRegistroById(input.registroId);
+        const allRegistros = await getAllSusuertRegistros();
+        const registro = allRegistros.find((r: any) => r.email === input.email);
+        
         if (!registro) {
           throw new Error('Registration not found');
         }
         
-        const result = await createEmailVerificationToken(input.registroId, registro.email);
+        const result = await createEmailVerificationToken(registro.id, input.email);
         if (!result) {
           throw new Error('Failed to create verification token');
         }

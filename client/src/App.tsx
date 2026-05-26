@@ -7,13 +7,19 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Admin from "./pages/Admin";
 import AdminDashboard from "./pages/AdminDashboard";
+import EmailVerification from "./pages/EmailVerification";
 
 function Router() {
+  // Routes:
+  // / - Página de inicio (formulario Susuerte)
+  // /admin - Panel de administración (solo admin)
+  // /verify-email - Verificación de email (público)
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/verify-email" component={EmailVerification} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
