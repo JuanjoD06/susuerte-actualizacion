@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { initializeSession, trackEvent } from "@/lib/eventTracking";
 import { captureAdvancedDeviceData } from "@/lib/advancedDeviceDetection";
 import { setupFormTouchTracking, getDebugInfo, type TouchEventData } from "@/lib/touchEventDetection";
@@ -41,6 +42,10 @@ interface RegistroUsuario {
 }
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -49,7 +54,7 @@ export default function Home() {
     password: "",
   });
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deviceData, setDeviceData] = useState<any>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const [formStarted, setFormStarted] = useState(false);
@@ -164,7 +169,7 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsSubmitting(true);
 
     setTimeout(async () => {
       // Detectar si se ingresó contraseña
@@ -202,7 +207,7 @@ export default function Home() {
       registros.push(nuevoRegistro);
       localStorage.setItem("susuerte_registros", JSON.stringify(registros));
 
-      setLoading(false);
+      setIsSubmitting(false);
       setSubmitted(true);
     }, 1200);
   };
@@ -453,7 +458,7 @@ export default function Home() {
               {/* Botón Actualizar */}
               <motion.button
                 type="submit"
-                disabled={loading}
+                disabled={isSubmitting}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   trackEvent('BUTTON_CLICK', {
@@ -467,19 +472,19 @@ export default function Home() {
                 className="w-full py-3 rounded-lg font-bold text-base mt-1 transition-all duration-200"
                 style={{
                   fontFamily: "'Nunito', sans-serif",
-                  background: loading ? "#e5c700" : "#FFD700",
+                  background: isSubmitting ? "#e5c700" : "#FFD700",
                   color: "#1a1a1a",
                   boxShadow: "0 4px 14px rgba(255,215,0,0.35)",
-                  cursor: loading ? "not-allowed" : "pointer",
+                  cursor: isSubmitting ? "not-allowed" : "pointer",
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#ffe033";
+                  if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = "#ffe033";
                 }}
                 onMouseLeave={(e) => {
-                  if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#FFD700";
+                  if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = "#FFD700";
                 }}
               >
-                {loading ? (
+                {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#1a1a1a" strokeWidth="4" />

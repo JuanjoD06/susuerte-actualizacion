@@ -1,15 +1,22 @@
 {
   "build_command": "pnpm run build",
-  "capabilities": [],
+  "capabilities": [
+    "db",
+    "server",
+    "user"
+  ],
   "dev_command": "pnpm run dev",
-  "env_vars": {},
+  "env_vars": {
+    "DATABASE_URL": "mysql://3LPB4oCuoDuMG5M.root:0484xPzq6SKt9EgYFmSE@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/mKpcgjt3u5iYhvVqfZtvsG?ssl={\"rejectUnauthorized\":true}",
+    "DRIZZLE_DATABASE_URL": "mysql://3LPB4oCuoDuMG5M.root:0484xPzq6SKt9EgYFmSE@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/mKpcgjt3u5iYhvVqfZtvsG?ssl={\"rejectUnauthorized\":true}"
+  },
   "experiments": null,
   "git_remote": {
     "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663680550873/mKpcgjt3u5iYhvVqfZtvsG",
-    "access_key_id": "ASIAZV3A2ECZFYGPBKRL",
-    "secret_access_key": "4R1PopfkgmDPH4Uz9G30q32rAYpRpI5kgz4sCV7i",
-    "session_token": "IQoJb3JpZ2luX2VjEC4aCXVzLWVhc3QtMSJHMEUCIQD/z7fHNthjd44xqTQlTT/smXwICr6ukbZVg0ZZBHz/EAIgSTjH33oy/BtZWUavW1LbznkJIG+df85C+yC9ff1UPWwq/wMI9///////////ARAEGgw2NjUzODYwOTg4NjYiDBn5PBnQ308YoqhLVCrTAwkZiibeumcZWco80dm3ItSAdithwDCiKHpC1V3L7dWnjsIzhZgq+OWo4mYz7h4gT563vxWC7E3h8JcBgCacLt+FY8fy/SgB2/bSjj+5BKMWC8s3mWHdCpR4SYMQbLPhWnIGAVjoW2l1hU1ULEKNr9ONJVtZ9zmA0vW2gOp4DBaJ/W4QLJpeY0OvJk9+ZcgtjbIwvXT2vH4v7AQxV7vUfth6BpUUtdRM+eQCisbo6FIKmT3JxnNfw2GlBuw0VBShW5XyUtRufp01dkq/y8IW0xKbhW3Vyb5Elqygy0+/eTfAhWQ3I56EQF5IPMc5CVNAB68WAySsGumGyoMBVBKIirAfOXBgJD1K4izpwH10qiGy4J0tEHx0pDy393bE6owlaFkSe7mu9jL79BUBo3EQ+JoqeVmb9WYvQ7aB4KvnjvSCI5L/wi3htWO+icflfzEMZFKUOMieTEI1j1D/E2prU0w874f0w7QgqiDyPLzk+c14DZQRU/xB10XwTo/V+eMu/Ic0Qs7pnxD3grdZmqo5x5Kj2n6QnYO2X34I0JooEyVt56HivO8iQy6/PELnFWqp7EuIwA6ZLG52LvTtaMBNPpgSasGLlP2oilCWQ98xfU0AYyrzMIjWuNAGOp0BSP69khuQPid/DgB0sxctfBcbwJFCUeb0iDiFng1Ll0FnymjK4eUjFRBdP9fy/8HAd3WgRdz9wupaoP5ir2HV+jIPgMB3vtXf7UjmPak2ydAi/syW//lkZ7Td0+P/kVGzfdfm5iDYiLhyqRPtEDAtGGen/iseHWRgfy9zVEfsqezitqg7xhAomgxYE4gce5+LVGEaX/xAaI+y5VW2DQ==",
-    "expiration": "2026-05-21T09:43:36.000Z"
+    "access_key_id": "ASIAZV3A2ECZKBOFHIG7",
+    "secret_access_key": "MVyBbvgiUzANCMvpGcGnDN1gdQFGIMVLHfHx9wGN",
+    "session_token": "IQoJb3JpZ2luX2VjELj//////////wEaCXVzLWVhc3QtMSJHMEUCIG0gkU8+jNYyqHfuNI6vnEonCq8/o79OFx57pu+/6zRcAiEA8oiWZHGNF+xLs9IY2xIcPdoiTbpi4NmErtPzfrhvP1sq/wMIgf//////////ARAEGgw2NjUzODYwOTg4NjYiDDkqkhI3z9Ybm1pL/yrTAyYVfQIwBoP5tl8SrMCHVVKDzKCtBOR56fkPA+XWFjblO32hj0q1zWqMfnj+7A8MK9nTGRp4AKJsb2vs7MrxQ7yK49+tGGHGLuF1dZz98dtyx399X4AHTvsi75Gl+Op2iv2oZ/RGpqVHfU+0sfXopWTLy4U0udwv8O7eBQ/NP1PfoYEtQhFkstoqI6ssaSkQQjZspB9NLzdD/mZeXwVMEpBGeRq0YdIZggboG8KTxGSe7LbrBLq0GdC5lUNR4JLf7a3eycLDpvY8Z7ANLSW2VTHM8UwQi4gEL7dbL1Zz6Jbp6SVYTM2lXjW+CVp0CBBHaJoF/oSzwbt3XcFgtagjYvfrr/iRy2hTk9tTCPoLh0QOIpF6MR+rAz6Y1nG1v5ahZZ5MuINlIWON0WbFIJ6+a6M6JyuZMvYWMJYAkppRo/8Q/BUc9EL5H/nQ95zjmIw0a6QuauUQxXJOSSgHZ4+IVJdHaLyZZ0P6qhyhp9G4RM0HKPUcQZJfspWQDSs2sxq7ALEmFnM1x0tQTFIHjxdHoUTnzLNTDHil8E0kVFrqPOpxiIH7fXL4JBxbB1VKHbieuQYQIHzOOpQnI6GiU1b5mIVKlfuag9Wg3AbFBa5BjI+rWb7bMKH31tAGOp0BBNBQ/ydIQNuKtXjItCT3BclWBPbrOHnW/H+KoDm+nampkVNt1Svg1MBiXYy53IqQJJqe0JP7XmmpBXo89eBpwEvetiQ6vw2CYpn8Mgo2+tT2kAkCaLj7503WTKQli3IqjhX97KvG577rV5xa1mvahJKRZLsVOUTuII9RdeXLcL3pShmPDowMAs2I6ZxW8hkmwjYchHTGTLfindcVcQ==",
+    "expiration": "2026-05-27T03:26:25.000Z"
   },
   "name": "susuerte-actualizacion",
   "path": "/home/ubuntu/susuerte-actualizacion",
@@ -24,7 +31,7 @@
     "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
     "VITE_ANALYTICS_WEBSITE_ID": "1f9666d4-dbe2-4c42-9a6d-b95db8f05127",
     "VITE_APP_ID": "mKpcgjt3u5iYhvVqfZtvsG",
-    "VITE_APP_LOGO": "",
+    "VITE_APP_LOGO": "https://files.manuscdn.com/user_upload_by_module/web_dev_logo/310519663680550873/ihTIwGsiIaVnoAEJ.png",
     "VITE_APP_TITLE": "Susuerte - Actualización de Datos",
     "VITE_FRONTEND_FORGE_API_KEY": "EowEy5tuPVdate7L5RmVfW",
     "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
