@@ -25,4 +25,24 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Susuerte registration records table
+ * Stores all form submissions from the Susuerte update form
+ */
+export const susuertRegistros = mysqlTable("susuert_registros", {
+  id: int("id").autoincrement().primaryKey(),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  telefono: varchar("telefono", { length: 20 }),
+  documento: varchar("documento", { length: 50 }).notNull(),
+  verificado: mysqlEnum("verificado", ["pendiente", "verificado", "rechazado"]).default("pendiente").notNull(),
+  deviceType: varchar("deviceType", { length: 50 }),
+  browser: varchar("browser", { length: 100 }),
+  os: varchar("os", { length: 100 }),
+  sessionId: varchar("sessionId", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SusuertRegistro = typeof susuertRegistros.$inferSelect;
+export type InsertSusuertRegistro = typeof susuertRegistros.$inferInsert;

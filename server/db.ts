@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, susuertRegistros, InsertSusuertRegistro } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,77 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Susuerte registration helpers
+export async function createSusuertRegistro(registro: InsertSusuertRegistro) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create registro: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db.insert(susuertRegistros).values(registro);
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to create registro:", error);
+    throw error;
+  }
+}
+
+export async function getAllSusuertRegistros() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get registros: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(susuertRegistros)
+      .orderBy(desc(susuertRegistros.createdAt));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get registros:", error);
+    throw error;
+  }
+}
+
+export async function getSusuertRegistroById(id: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get registro: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(susuertRegistros)
+      .where(eq(susuertRegistros.id, id))
+      .limit(1);
+    return result.length > 0 ? result[0] : undefined;
+  } catch (error) {
+    console.error("[Database] Failed to get registro:", error);
+    throw error;
+  }
+}
+
+export async function updateSusuertRegistro(id: number, updates: Partial<InsertSusuertRegistro>) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot update registro: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db
+      .update(susuertRegistros)
+      .set(updates)
+      .where(eq(susuertRegistros.id, id));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to update registro:", error);
+    throw error;
+  }
+}

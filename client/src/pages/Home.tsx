@@ -16,6 +16,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { initializeSession, trackEvent } from "@/lib/eventTracking";
 import { captureAdvancedDeviceData } from "@/lib/advancedDeviceDetection";
 import { setupFormTouchTracking, getDebugInfo, type TouchEventData } from "@/lib/touchEventDetection";
@@ -61,6 +62,9 @@ export default function Home() {
   const formRef = useRef<HTMLFormElement>(null);
   const cleanupTouchTrackingRef = useRef<(() => void) | null>(null);
   const touchEventCountRef = useRef<Map<string, number>>(new Map());
+
+  // Mutation para guardar el registro en la base de datos
+  const createRegistroMutation = trpc.susuert.createRegistro.useMutation();
 
   // Inicializar sesión y capturar datos técnicos
   useEffect(() => {
@@ -167,15 +171,13 @@ export default function Home() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(async () => {
-      // Detectar si se ingresó contraseña
+    try {
       const passwordEntered = formData.password.length > 0;
 
-      // Registrar envío de formulario
       await trackEvent('FORM_SUBMIT', {
         nombre: formData.name,
         email: formData.email,
@@ -187,7 +189,17 @@ export default function Home() {
         timestamp: new Date().toISOString(),
       });
 
-      // Guardar registro en localStorage (sin guardar la contraseña)
+      await createRegistroMutation.mutateAsync({
+        nombre: formData.name,
+        email: formData.email,
+        telefono: formData.phone,
+        documento: formData.document,
+        deviceType: deviceData?.tipoDispositivo || 'Desconocido',
+        browser: deviceData?.navegador || 'Desconocido',
+        os: deviceData?.os || 'Desconocido',
+        sessionId: sessionId,
+      });
+
       const registrosGuardados = localStorage.getItem("susuerte_registros");
       const registros = registrosGuardados ? JSON.parse(registrosGuardados) : [];
 
@@ -209,7 +221,11 @@ export default function Home() {
 
       setIsSubmitting(false);
       setSubmitted(true);
-    }, 1200);
+    } catch (error) {
+      console.error('Error al guardar registro:', error);
+      setIsSubmitting(false);
+      alert('Error al guardar los datos. Por favor intenta de nuevo.');
+    }
   };
 
   return (
