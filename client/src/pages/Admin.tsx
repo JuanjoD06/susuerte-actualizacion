@@ -99,6 +99,7 @@ export default function Admin() {
 
   // Calcular métricas
   const calcularMetricas = () => {
+    console.log('[SUSUERTE ADMIN METRICS] Total eventos:', eventos.length);
     const totalClics = eventos.filter(e => e.eventType === 'BUTTON_CLICK').length;
     const totalRegistros = registros.length;
     const usuariosUnicos = new Set(eventos.map(e => e.email)).size;
@@ -207,10 +208,19 @@ export default function Admin() {
 
   const eventosFiltrados = eventos.filter(e => {
     let match = true;
-    if (filterDevice && e.dispositivo !== filterDevice) match = false;
-    if (filterBrowser && e.navegador !== filterBrowser) match = false;
+    if (filterDevice && filterDevice !== '') {
+      if (e.dispositivo !== filterDevice) match = false;
+    }
+    if (filterBrowser && filterBrowser !== '') {
+      if (e.navegador !== filterBrowser) match = false;
+    }
     return match;
   });
+
+  console.log('[SUSUERTE ADMIN] Total eventos:', eventos.length);
+  console.log('[SUSUERTE ADMIN] Eventos filtrados:', eventosFiltrados.length);
+  console.log('[SUSUERTE ADMIN] Filtro dispositivo:', filterDevice || 'NINGUNO');
+  console.log('[SUSUERTE ADMIN] Filtro navegador:', filterBrowser || 'NINGUNO');
 
   // Paginación
   const totalPages = Math.ceil(registrosFiltrados.length / itemsPerPage);
