@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, susuertRegistros, InsertSusuertRegistro } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -160,6 +160,56 @@ export async function updateSusuertRegistro(id: number, updates: Partial<InsertS
     return result;
   } catch (error) {
     console.error("[Database] Failed to update registro:", error);
+    throw error;
+  }
+}
+
+export async function searchSusuertRegistros(query: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot search registros: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(susuertRegistros)
+      .where(
+        or(
+          like(susuertRegistros.nombre, `%${query}%`),
+          like(susuertRegistros.email, `%${query}%`),
+          like(susuertRegistros.documento, `%${query}%`)
+        )
+      )
+      .orderBy(desc(susuertRegistros.createdAt));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to search registros:", error);
+    throw error;
+  }
+}
+
+export async function filterSusuertRegistros(status?: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot filter registros: database not available");
+    return [];
+  }
+
+  try {
+    if (!status) {
+      return getAllSusuertRegistros();
+    }
+
+    const result = await db
+      .select()
+      .from(susuertRegistros)
+      .where(eq(susuertRegistros.verificado, status as any))
+      .orderBy(desc(susuertRegistros.createdAt));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to filter registros:", error);
     throw error;
   }
 }

@@ -13,7 +13,9 @@
 - [x] Visualización de registros desde cualquier dispositivo
 - [x] Edición de estado de registros desde el panel (pendiente, verificado, rechazado)
 
+- [x] Búsqueda de registros por nombre, email o documento
+- [x] Filtrado de registros por estado (pendiente, verificado, rechazado)
+
 ## Features Pendientes
 - [ ] Verificación de email
 - [ ] Exportación de datos
-- [ ] Búsqueda y filtrado de registros

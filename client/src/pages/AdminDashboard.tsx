@@ -5,17 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, LogOut, Check, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, LogOut, Check, X, Search } from "lucide-react";
 import { getLoginUrl } from "@/const";
 
 export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [newStatus, setNewStatus] = useState<'pendiente' | 'verificado' | 'rechazado'>('pendiente');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'pendiente' | 'verificado' | 'rechazado' | undefined>(undefined);
   
   const { data: registros, isLoading, error, refetch } = trpc.susuert.getAllRegistros.useQuery(undefined, {
-    enabled: user?.role === 'admin',
+    enabled: user?.role === 'admin' && !searchQuery && !filterStatus,
   });
+  
+  const { data: searchResults, isLoading: isSearching, error: searchError } = trpc.susuert.searchRegistros.useQuery(
+    { query: searchQuery },
+    { enabled: user?.role === 'admin' && searchQuery.length > 0 }
+  );
+  
+  const { data: filterResults, isLoading: isFiltering, error: filterError } = trpc.susuert.filterRegistros.useQuery(
+    { status: filterStatus },
+    { enabled: user?.role === 'admin' && filterStatus !== undefined }
+  );
+  
+  const displayedRegistros = searchQuery ? searchResults : filterStatus ? filterResults : registros;
+  const isLoadingData = isLoading || isSearching || isFiltering;
+  const displayError = searchQuery ? searchError : filterStatus ? filterError : error;
   
   const updateRegistroMutation = trpc.susuert.updateRegistro.useMutation({
     onSuccess: () => {
@@ -85,23 +102,64 @@ export default function AdminDashboard() {
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Registros Recibidos</h2>
             <Badge variant="secondary">
-              {registros?.length || 0} registros
+              {displayedRegistros?.length || 0} registros
             </Badge>
           </div>
 
-          {isLoading ? (
+          {/* Search and Filter Bar */}
+          <Card className="bg-white">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Buscar por nombre, email o documento..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setFilterStatus(undefined);
+                      }}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="w-full md:w-48">
+                  <Select
+                    value={filterStatus || 'all'}
+                    onValueChange={(value) => {
+                      setFilterStatus(value === 'all' ? undefined : (value as any));
+                      setSearchQuery('');
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filtrar por estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="verificado">Verificado</SelectItem>
+                      <SelectItem value="rechazado">Rechazado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {isLoadingData ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="animate-spin w-8 h-8" />
             </div>
-          ) : error ? (
+          ) : displayError ? (
             <Card className="border-red-200 bg-red-50">
               <CardContent className="pt-6">
-                <p className="text-red-800">Error al cargar los registros: {error.message}</p>
+                <p className="text-red-800">Error al cargar los registros: {displayError.message}</p>
               </CardContent>
             </Card>
-          ) : registros && registros.length > 0 ? (
+          ) : displayedRegistros && displayedRegistros.length > 0 ? (
             <div className="grid gap-4">
-              {registros.map((registro) => (
+              {displayedRegistros.map((registro) => (
                 <Card key={registro.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start gap-4">
@@ -213,7 +271,9 @@ export default function AdminDashboard() {
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <p className="text-gray-600 text-center">
-                  No hay registros aún. Los registros aparecerán aquí cuando se envíe el formulario.
+                  {searchQuery || filterStatus
+                    ? 'No se encontraron registros con los criterios de búsqueda.'
+                    : 'No hay registros aún. Los registros aparecerán aquí cuando se envíe el formulario.'}
                 </p>
               </CardContent>
             </Card>

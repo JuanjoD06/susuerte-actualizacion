@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro } from "./db";
+import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro, searchSusuertRegistros, filterSusuertRegistros } from "./db";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -54,6 +54,28 @@ export const appRouter = router({
           throw new Error('Only admins can update registrations');
         }
         return updateSusuertRegistro(input.id, { verificado: input.verificado });
+      }),
+
+    searchRegistros: protectedProcedure
+      .input(z.object({
+        query: z.string().min(1),
+      }))
+      .query(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can search registrations');
+        }
+        return searchSusuertRegistros(input.query);
+      }),
+
+    filterRegistros: protectedProcedure
+      .input(z.object({
+        status: z.enum(['pendiente', 'verificado', 'rechazado']).optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can filter registrations');
+        }
+        return filterSusuertRegistros(input.status);
       }),
   }),
 });
