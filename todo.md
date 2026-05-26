@@ -21,7 +21,17 @@
 - [x] Exportación de datos a CSV desde el panel de administración
 - [x] Mejorar generación de tokens (usar crypto en lugar de Math.random)
 
-## Features Pendientes
+## Features Pendientes (Prioridad Alta)
+- [x] Agregar tests para procedimientos de verificación (requestEmailVerification, verifyEmail)
+- [x] Agregar tests para exportación CSV (tests de helpers de base de datos)
+
+## Features Completadas (Fase 2)
+- [x] Exportación de datos a CSV desde el panel de administración
+- [x] Mejorar generación de tokens (usar crypto en lugar de Math.random)
+- [x] Agregar tests para procedimientos de verificación
+- [x] Agregar tests para exportación CSV
+- [x] Refactorizar exportación CSV en utilidad testeable
+
+## Features Pendientes (Prioridad Media)
 - [ ] Implementar envío real de emails de verificación
 - [ ] Agregar UI para verificación de email
-- [ ] Agregar tests para procedimientos de verificación

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, LogOut, Check, X, Search, Download } from "lucide-react";
 import { useState } from "react";
 import { getLoginUrl } from "@/const";
+import { exportToCSV } from "@/lib/csvExport";
 
 export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -144,7 +145,7 @@ export default function AdminDashboard() {
                   </Select>
                 </div>
                 <Button
-                  onClick={() => exportToCSV(displayedRegistros || [])}
+                  onClick={handleExportCSV}
                   variant="outline"
                   className="md:w-auto"
                 >
@@ -291,42 +292,12 @@ export default function AdminDashboard() {
     </div>
   );
 
-  function exportToCSV(data: any[]) {
-    if (data.length === 0) {
-      alert('No hay datos para exportar');
-      return;
+  function handleExportCSV() {
+    try {
+      exportToCSV(displayedRegistros || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error al exportar';
+      alert(message);
     }
-
-    const headers = ['ID', 'Nombre', 'Email', 'Teléfono', 'Documento', 'Estado', 'Dispositivo', 'Navegador', 'SO', 'Fecha'];
-    
-    const rows = data.map(registro => [
-      registro.id,
-      registro.nombre,
-      registro.email,
-      registro.telefono || '',
-      registro.documento,
-      registro.verificado,
-      registro.deviceType || '',
-      registro.browser || '',
-      registro.os || '',
-      new Date(registro.createdAt).toLocaleString('es-ES'),
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `susuerte-registros-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   }
 }
