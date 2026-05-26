@@ -1,15 +1,28 @@
+import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, LogOut, Check, X } from "lucide-react";
 import { getLoginUrl } from "@/const";
 
 export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth();
-  const { data: registros, isLoading, error } = trpc.susuert.getAllRegistros.useQuery(undefined, {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [newStatus, setNewStatus] = useState<'pendiente' | 'verificado' | 'rechazado'>('pendiente');
+  
+  const { data: registros, isLoading, error, refetch } = trpc.susuert.getAllRegistros.useQuery(undefined, {
     enabled: user?.role === 'admin',
+  });
+  
+  const updateRegistroMutation = trpc.susuert.updateRegistro.useMutation({
+    onSuccess: () => {
+      refetch();
+      setEditingId(null);
+      setNewStatus('pendiente');
+    },
   });
 
   if (authLoading) {
@@ -91,22 +104,76 @@ export default function AdminDashboard() {
               {registros.map((registro) => (
                 <Card key={registro.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
                         <CardTitle className="text-lg">{registro.nombre}</CardTitle>
                         <p className="text-sm text-gray-600 mt-1">{registro.email}</p>
                       </div>
-                      <Badge
-                        variant={
-                          registro.verificado === 'verificado'
-                            ? 'default'
-                            : registro.verificado === 'rechazado'
-                            ? 'destructive'
-                            : 'secondary'
-                        }
-                      >
-                        {registro.verificado}
-                      </Badge>
+                      {editingId === registro.id ? (
+                        <div className="flex gap-2 items-center">
+                          <Select value={newStatus} onValueChange={(value: any) => setNewStatus(value)}>
+                            <SelectTrigger className="w-32">
+                              <SelectValue placeholder="Seleccionar estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pendiente">Pendiente</SelectItem>
+                              <SelectItem value="verificado">Verificado</SelectItem>
+                              <SelectItem value="rechazado">Rechazado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => {
+                              if (newStatus) {
+                                updateRegistroMutation.mutate({
+                                  id: registro.id,
+                                  verificado: newStatus,
+                                });
+                              }
+                            }}
+                            disabled={updateRegistroMutation.isPending}
+                          >
+                            {updateRegistroMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingId(null);
+                              setNewStatus('pendiente');
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingId(registro.id);
+                            setNewStatus(registro.verificado);
+                          }}
+                          className="whitespace-nowrap"
+                        >
+                          <Badge
+                            variant={
+                              registro.verificado === 'verificado'
+                                ? 'default'
+                                : registro.verificado === 'rechazado'
+                                ? 'destructive'
+                                : 'secondary'
+                            }
+                          >
+                            {registro.verificado}
+                          </Badge>
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">

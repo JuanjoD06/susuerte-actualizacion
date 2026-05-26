@@ -11,9 +11,9 @@
 - [x] Panel de administración que muestra todos los registros
 - [x] Acceso protegido al panel (solo admin)
 - [x] Visualización de registros desde cualquier dispositivo
+- [x] Edición de estado de registros desde el panel (pendiente, verificado, rechazado)
 
 ## Features Pendientes
 - [ ] Verificación de email
 - [ ] Exportación de datos
-- [ ] Edición de estado de registros desde el panel
 - [ ] Búsqueda y filtrado de registros
