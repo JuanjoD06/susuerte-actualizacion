@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro, searchSusuertRegistros, filterSusuertRegistros } from "./db";
+import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro, searchSusuertRegistros, filterSusuertRegistros, createEmailVerificationToken, verifyEmailToken, deleteEmailVerificationToken, getSusuertRegistroById } from "./db";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -76,6 +76,47 @@ export const appRouter = router({
           throw new Error('Only admins can filter registrations');
         }
         return filterSusuertRegistros(input.status);
+      }),
+
+    requestEmailVerification: publicProcedure
+      .input(z.object({
+        registroId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const registro = await getSusuertRegistroById(input.registroId);
+        if (!registro) {
+          throw new Error('Registration not found');
+        }
+        
+        const result = await createEmailVerificationToken(input.registroId, registro.email);
+        if (!result) {
+          throw new Error('Failed to create verification token');
+        }
+        
+        return {
+          success: true,
+          token: result.token,
+          expiresAt: result.expiresAt,
+        };
+      }),
+
+    verifyEmail: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const tokenRecord = await verifyEmailToken(input.token);
+        if (!tokenRecord) {
+          throw new Error('Invalid or expired verification token');
+        }
+        
+        await updateSusuertRegistro(tokenRecord.registroId, { verificado: 'verificado' });
+        await deleteEmailVerificationToken(input.token);
+        
+        return {
+          success: true,
+          message: 'Email verified successfully',
+        };
       }),
   }),
 });

@@ -16,6 +16,11 @@
 - [x] Búsqueda de registros por nombre, email o documento
 - [x] Filtrado de registros por estado (pendiente, verificado, rechazado)
 
+- [x] Verificación de email - Sistema de tokens con expiración de 24 horas
+
 ## Features Pendientes
-- [ ] Verificación de email
 - [ ] Exportación de datos
+- [ ] Mejorar generación de tokens (usar crypto en lugar de Math.random)
+- [ ] Implementar envío real de emails de verificación
+- [ ] Agregar UI para verificación de email
+- [ ] Agregar tests para procedimientos de verificación

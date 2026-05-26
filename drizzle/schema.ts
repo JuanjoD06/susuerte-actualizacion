@@ -46,3 +46,19 @@ export const susuertRegistros = mysqlTable("susuert_registros", {
 
 export type SusuertRegistro = typeof susuertRegistros.$inferSelect;
 export type InsertSusuertRegistro = typeof susuertRegistros.$inferInsert;
+
+/**
+ * Email verification tokens table
+ * Stores tokens for email verification process
+ */
+export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  registroId: int("registroId").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;

@@ -1,6 +1,6 @@
 import { eq, desc, or, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, susuertRegistros, InsertSusuertRegistro } from "../drizzle/schema";
+import { InsertUser, users, susuertRegistros, InsertSusuertRegistro, emailVerificationTokens, InsertEmailVerificationToken } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -210,6 +210,87 @@ export async function filterSusuertRegistros(status?: string) {
     return result;
   } catch (error) {
     console.error("[Database] Failed to filter registros:", error);
+    throw error;
+  }
+}
+
+// Email verification helpers
+export async function createEmailVerificationToken(registroId: number, email: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create verification token: database not available");
+    return undefined;
+  }
+
+  try {
+    // Generate a secure random token using crypto
+    const { randomBytes } = require('crypto');
+    const token = randomBytes(32).toString('hex');
+    
+    // Set expiration to 24 hours from now
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    const result = await db.insert(emailVerificationTokens).values({
+      registroId,
+      email,
+      token,
+      expiresAt,
+    });
+    
+    return { token, expiresAt };
+  } catch (error) {
+    console.error("[Database] Failed to create verification token:", error);
+    throw error;
+  }
+}
+
+export async function verifyEmailToken(token: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot verify token: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.token, token))
+      .limit(1);
+    
+    if (result.length === 0) {
+      return undefined;
+    }
+    
+    const tokenRecord = result[0];
+    
+    // Check if token has expired
+    if (new Date() > tokenRecord.expiresAt) {
+      return undefined;
+    }
+    
+    return tokenRecord;
+  } catch (error) {
+    console.error("[Database] Failed to verify token:", error);
+    throw error;
+  }
+}
+
+export async function deleteEmailVerificationToken(token: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot delete verification token: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db
+      .delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.token, token));
+    
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to delete verification token:", error);
     throw error;
   }
 }

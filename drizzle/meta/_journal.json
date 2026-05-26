@@ -15,6 +15,13 @@
       "when": 1779810777792,
       "tag": "0001_careful_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1779811703222,
+      "tag": "0002_typical_gateway",
+      "breakpoints": true
     }
   ]
 }
