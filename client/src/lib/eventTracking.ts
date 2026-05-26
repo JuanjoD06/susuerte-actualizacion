@@ -171,9 +171,15 @@ function detectBrowser(): string {
   const ua = navigator.userAgent;
   
   if (ua.indexOf('Firefox') > -1) return 'Firefox';
-  if (ua.indexOf('Chrome') > -1) return 'Chrome';
-  if (ua.indexOf('Safari') > -1) return 'Safari';
-  if (ua.indexOf('Edge') > -1) return 'Edge';
+  if (ua.indexOf('Chrome') > -1 && ua.indexOf('CriOS') === -1) return 'Chrome';
+  if (ua.indexOf('CriOS') > -1) return 'Chrome iOS';
+  if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1 && ua.indexOf('CriOS') === -1) {
+    if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1 || ua.indexOf('iPod') > -1) {
+      return 'Safari iOS';
+    }
+    return 'Safari';
+  }
+  if (ua.indexOf('Edge') > -1 || ua.indexOf('Edg') > -1) return 'Edge';
   if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) return 'Opera';
   
   return 'Desconocido';
@@ -199,11 +205,33 @@ function detectOS(): string {
  */
 function detectDevice(): string {
   const ua = navigator.userAgent;
+  const screenWidth = window.screen.width;
+  const screenHeight = window.screen.height;
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  const isTouchCapable = 'ontouchstart' in window || maxTouchPoints > 0 || (navigator as any).msMaxTouchPoints > 0;
   
-  if (/mobile/i.test(ua)) return 'Móvil';
-  if (/tablet|ipad/i.test(ua)) return 'Tablet';
+  let tipo = 'Desktop';
+  if (/mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
+    tipo = 'Móvil';
+  } else if (/tablet|ipad|playbook|silk|(android(?!.*mobi))/i.test(ua)) {
+    tipo = 'Tablet';
+  }
   
-  return 'Desktop';
+  const screenDiagonal = Math.sqrt(screenWidth ** 2 + screenHeight ** 2) / devicePixelRatio;
+  if (screenDiagonal < 600 && tipo !== 'Tablet') {
+    tipo = 'Móvil';
+  } else if (screenDiagonal >= 600 && screenDiagonal < 1000) {
+    tipo = 'Tablet';
+  } else if (screenDiagonal >= 1000) {
+    tipo = 'Desktop';
+  }
+  
+  if (isTouchCapable && tipo === 'Desktop' && screenDiagonal < 1000) {
+    tipo = 'Tablet';
+  }
+  
+  return tipo;
 }
 
 /**

@@ -13,10 +13,11 @@
  * Layout: Tarjeta centrada, fondo oscuro, sombra pronunciada
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { initializeSession, trackEvent } from "@/lib/eventTracking";
 import { captureAdvancedDeviceData } from "@/lib/advancedDeviceDetection";
+import { setupFormTouchTracking, getDebugInfo, type TouchEventData } from "@/lib/touchEventDetection";
 
 interface FormData {
   name: string;
@@ -52,6 +53,9 @@ export default function Home() {
   const [deviceData, setDeviceData] = useState<any>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const [formStarted, setFormStarted] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const cleanupTouchTrackingRef = useRef<(() => void) | null>(null);
+  const touchEventCountRef = useRef<Map<string, number>>(new Map());
 
   // Inicializar sesión y capturar datos técnicos
   useEffect(() => {
@@ -70,9 +74,44 @@ export default function Home() {
         dispositivo: device?.tipoDispositivo || 'Desconocido',
         navegador: device?.navegador || 'Desconocido',
       });
+
+      // Mostrar información de depuración en consola
+      console.log(getDebugInfo());
+
+      // Setup de tracking táctil mejorado
+      if (formRef.current) {
+        const handleTouchEvent = (data: TouchEventData) => {
+          // Contar eventos por campo
+          const count = touchEventCountRef.current.get(data.targetElement) || 0;
+          touchEventCountRef.current.set(data.targetElement, count + 1);
+
+          // Registrar evento táctil
+          trackEvent('BUTTON_CLICK', {
+            tipo: data.eventType,
+            campo: data.targetElement,
+            x: data.x,
+            y: data.y,
+            dispositivo: data.deviceType,
+            navegador: data.browser,
+            os: data.os,
+            isSafariIOS: data.isSafariIOS,
+            isMultiTouch: data.isMultiTouch,
+            touchPoints: data.touchPoints,
+            timestamp: data.timestamp,
+          });
+        };
+
+        cleanupTouchTrackingRef.current = setupFormTouchTracking(formRef.current, handleTouchEvent);
+      }
     };
 
     initializeUser();
+
+    return () => {
+      if (cleanupTouchTrackingRef.current) {
+        cleanupTouchTrackingRef.current();
+      }
+    };
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,7 +289,7 @@ export default function Home() {
               </p>
             </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
               {/* Nombre Completo */}
               <div className="flex flex-col gap-1">
                 <label

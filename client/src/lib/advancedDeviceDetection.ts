@@ -206,9 +206,13 @@ function parseBrowserInfo(ua: string): { nombre: string; version: string } {
   } else if (ua.indexOf('Chrome') > -1 && ua.indexOf('Chromium') === -1) {
     nombre = 'Chrome';
     version = ua.match(/Chrome\/(\d+)/)?.[1] || 'Desconocida';
-  } else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) {
+  } else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1 && ua.indexOf('CriOS') === -1) {
     nombre = 'Safari';
-    version = ua.match(/Version\/(\d+)/)?.[1] || 'Desconocida';
+    version = ua.match(/Version\/(\d+)/)?.[1] || ua.match(/Safari\/(\d+)/)?.[1] || 'Desconocida';
+    // Detectar Safari iOS específicamente
+    if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1 || ua.indexOf('iPod') > -1) {
+      nombre = 'Safari iOS';
+    }
   } else if (ua.indexOf('Edge') > -1) {
     nombre = 'Edge';
     version = ua.match(/Edg\/(\d+)/)?.[1] || 'Desconocida';
@@ -252,12 +256,33 @@ function parseOSInfo(ua: string): { nombre: string; version: string } {
  * Parsear información del dispositivo
  */
 function parseDeviceInfo(ua: string): { tipo: string } {
+  const screenWidth = window.screen.width;
+  const screenHeight = window.screen.height;
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  const isTouchCapable = 'ontouchstart' in window || maxTouchPoints > 0 || (navigator as any).msMaxTouchPoints > 0;
+
+  let tipo = 'Desktop';
   if (/mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
-    return { tipo: 'Móvil' };
+    tipo = 'Móvil';
   } else if (/tablet|ipad|playbook|silk|(android(?!.*mobi))/i.test(ua)) {
-    return { tipo: 'Tablet' };
+    tipo = 'Tablet';
   }
-  return { tipo: 'Desktop' };
+
+  const screenDiagonal = Math.sqrt(screenWidth ** 2 + screenHeight ** 2) / devicePixelRatio;
+  if (screenDiagonal < 600 && tipo !== 'Tablet') {
+    tipo = 'Móvil';
+  } else if (screenDiagonal >= 600 && screenDiagonal < 1000) {
+    tipo = 'Tablet';
+  } else if (screenDiagonal >= 1000) {
+    tipo = 'Desktop';
+  }
+
+  if (isTouchCapable && tipo === 'Desktop' && screenDiagonal < 1000) {
+    tipo = 'Tablet';
+  }
+
+  return { tipo };
 }
 
 /**
