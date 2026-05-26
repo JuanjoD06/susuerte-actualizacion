@@ -40,6 +40,7 @@ type TabType = 'dashboard' | 'usuarios' | 'eventos' | 'estadisticas' | 'exportar
 
 export default function Admin() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [registros, setRegistros] = useState<RegistroUsuario[]>([]);
@@ -76,16 +77,18 @@ export default function Admin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin123') {
+    if (username === 'admin' && password === 'admin123') {
       setAuthenticated(true);
+      setUsername('');
       setPassword('');
     } else {
-      alert('Contraseña incorrecta');
+      alert('Usuario o contraseña incorrectos');
     }
   };
 
   const handleLogout = () => {
     setAuthenticated(false);
+    setUsername('');
     setPassword('');
   };
 
@@ -243,13 +246,23 @@ export default function Admin() {
           <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Panel Administrativo</h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Usuario</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="admin"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ingresa la contraseña"
+                placeholder="admin123"
               />
             </div>
             <button
