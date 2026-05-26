@@ -18,9 +18,10 @@
 
 - [x] Verificación de email - Sistema de tokens con expiración de 24 horas
 
+- [x] Exportación de datos a CSV desde el panel de administración
+- [x] Mejorar generación de tokens (usar crypto en lugar de Math.random)
+
 ## Features Pendientes
-- [ ] Exportación de datos
-- [ ] Mejorar generación de tokens (usar crypto en lugar de Math.random)
 - [ ] Implementar envío real de emails de verificación
 - [ ] Agregar UI para verificación de email
 - [ ] Agregar tests para procedimientos de verificación
