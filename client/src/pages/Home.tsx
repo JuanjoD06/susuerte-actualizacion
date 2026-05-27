@@ -87,31 +87,12 @@ export default function Home() {
       // Mostrar información de depuración en consola
       console.log(getDebugInfo());
 
-      // Setup de tracking táctil mejorado
-      if (formRef.current) {
-        const handleTouchEvent = (data: TouchEventData) => {
-          // Contar eventos por campo
-          const count = touchEventCountRef.current.get(data.targetElement) || 0;
-          touchEventCountRef.current.set(data.targetElement, count + 1);
-
-          // Registrar evento táctil
-          trackEvent('BUTTON_CLICK', {
-            tipo: data.eventType,
-            campo: data.targetElement,
-            x: data.x,
-            y: data.y,
-            dispositivo: data.deviceType,
-            navegador: data.browser,
-            os: data.os,
-            isSafariIOS: data.isSafariIOS,
-            isMultiTouch: data.isMultiTouch,
-            touchPoints: data.touchPoints,
-            timestamp: data.timestamp,
-          });
-        };
-
-        cleanupTouchTrackingRef.current = setupFormTouchTracking(formRef.current, handleTouchEvent);
-      }
+      // Setup de tracking táctil mejorado - DESACTIVADO para evitar duplicación
+      // Los clics ya se registran en handleFieldClick
+      // if (formRef.current) {
+      //   const handleTouchEvent = (data: TouchEventData) => { ... };
+      //   cleanupTouchTrackingRef.current = setupFormTouchTracking(formRef.current, handleTouchEvent);
+      // }
     };
 
     initializeUser();
@@ -139,7 +120,7 @@ export default function Home() {
   };
 
   const handleFieldClick = (fieldId: string) => {
-    // Registrar clic en campo específico
+    // Registrar clic en campo específico (único evento)
     trackEvent('BUTTON_CLICK', {
       tipo: 'campo_click',
       campo: fieldId,
@@ -150,25 +131,11 @@ export default function Home() {
   };
 
   const handleFieldFocus = (fieldId: string) => {
-    // Registrar focus en campo
-    trackEvent('BUTTON_CLICK', {
-      tipo: 'campo_focus',
-      campo: fieldId,
-      dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
-      navegador: deviceData?.navegador || 'Desconocido',
-      timestamp: new Date().toISOString(),
-    });
+    // No registrar evento de focus (evita duplicación)
   };
 
   const handleFieldBlur = (fieldId: string) => {
-    // Registrar blur en campo
-    trackEvent('BUTTON_CLICK', {
-      tipo: 'campo_blur',
-      campo: fieldId,
-      dispositivo: deviceData?.tipoDispositivo || 'Desconocido',
-      navegador: deviceData?.navegador || 'Desconocido',
-      timestamp: new Date().toISOString(),
-    });
+    // No registrar evento de blur (evita duplicación)
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -168,23 +168,23 @@ export default function Admin() {
   const registrosPendientes = registros.filter(r => r.verificado === 'pendiente').length;
   const registrosRechazados = registros.filter(r => r.verificado === 'rechazado').length;
 
-  // Contar por SO
-  const soCount = eventos.reduce((acc, e) => {
-    const so = e.sistemaOperativo || 'Desconocido';
+  // Contar usuarios únicos por SO (no eventos)
+  const soCount = registros.reduce((acc, r) => {
+    const so = r.os || 'Desconocido';
     acc[so] = (acc[so] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  // Contar por navegador
-  const browserCount = eventos.reduce((acc, e) => {
-    const nav = e.navegador || 'Desconocido';
+  // Contar usuarios únicos por navegador (no eventos)
+  const browserCount = registros.reduce((acc, r) => {
+    const nav = r.browser || 'Desconocido';
     acc[nav] = (acc[nav] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  // Contar por dispositivo
-  const deviceCount = eventos.reduce((acc, e) => {
-    const dev = e.dispositivo || 'Desconocido';
+  // Contar usuarios únicos por dispositivo (no eventos)
+  const deviceCount = registros.reduce((acc, r) => {
+    const dev = r.deviceType || 'Desconocido';
     acc[dev] = (acc[dev] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
