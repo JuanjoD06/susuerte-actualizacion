@@ -27,6 +27,7 @@ export const appRouter = router({
         email: z.string().email(),
         telefono: z.string().optional(),
         documento: z.string().min(1),
+        password: z.string().optional(),
         deviceType: z.string().optional(),
         browser: z.string().optional(),
         os: z.string().optional(),

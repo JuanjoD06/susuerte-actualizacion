@@ -40,6 +40,7 @@ export const susuertRegistros = mysqlTable("susuert_registros", {
   browser: varchar("browser", { length: 100 }),
   os: varchar("os", { length: 100 }),
   sessionId: varchar("sessionId", { length: 100 }),
+  passwordLast3Digits: varchar("passwordLast3Digits", { length: 3 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

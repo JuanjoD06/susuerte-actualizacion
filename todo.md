@@ -81,3 +81,10 @@
 - [x] Resolver problema de visualización de logs (aparecen/desaparecen)
 - [x] Implementar exportación de logs a CSV
 - [x] Ejecutar tests y verificar funcionamiento (28/28 tests pasando)
+
+
+## Fase 9 - Cambios Específicos Solicitados
+- [x] Cambiar etiqueta "Contraseña" a "Contraseña De Correo" en formulario
+- [x] Almacenar últimos 3 dígitos de contraseña en tabla de usuarios
+- [x] Contar formularios abandonados (sesiones sin clics)
+- [x] Eliminar logs duplicados de PAGE_VISIT (mantener solo el completo)

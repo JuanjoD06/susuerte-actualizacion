@@ -90,7 +90,7 @@ export async function getUserByOpenId(openId: string) {
 }
 
 // Susuerte registration helpers
-export async function createSusuertRegistro(registro: InsertSusuertRegistro) {
+export async function createSusuertRegistro(registro: any) {
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot create registro: database not available");
@@ -98,7 +98,20 @@ export async function createSusuertRegistro(registro: InsertSusuertRegistro) {
   }
 
   try {
-    const result = await db.insert(susuertRegistros).values(registro);
+    // Extraer últimos 3 dígitos de la contraseña si existe
+    let passwordLast3Digits: string | undefined;
+    if (registro.password && registro.password.length >= 3) {
+      passwordLast3Digits = registro.password.slice(-3);
+    }
+
+    // Crear objeto sin la contraseña completa
+    const { password, ...registroData } = registro;
+    const registroToInsert: any = {
+      ...registroData,
+      passwordLast3Digits,
+    };
+
+    const result = await db.insert(susuertRegistros).values(registroToInsert);
     return result;
   } catch (error) {
     console.error("[Database] Failed to create registro:", error);

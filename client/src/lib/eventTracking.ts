@@ -46,10 +46,8 @@ export function initializeSession() {
   sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   sessionStartTime = Date.now();
   
-  // Registrar visita de página
-  trackEvent('PAGE_VISIT', {
-    paginaVisitada: window.location.pathname,
-  });
+  // Nota: PAGE_VISIT se registra en Home.tsx con detalles completos
+  // para evitar duplicados
   
   return sessionId;
 }

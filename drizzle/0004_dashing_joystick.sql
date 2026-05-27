@@ -1,0 +1,1 @@
+ALTER TABLE `susuert_registros` ADD `passwordLast3Digits` varchar(3);
