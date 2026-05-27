@@ -74,3 +74,10 @@
 - [x] Detalles expandibles para cada evento (JSON)
 - [x] Sincronización de logs entre dispositivos (desktop y móvil)
 - [x] 28 tests pasando (sin cambios en suite de tests)
+
+
+## Fase 8 - Corrección de Bugs y Mejoras
+- [x] Fijar error de tRPC "hooks[lastArg] is not a function" en eventTracking
+- [x] Resolver problema de visualización de logs (aparecen/desaparecen)
+- [x] Implementar exportación de logs a CSV
+- [x] Ejecutar tests y verificar funcionamiento (28/28 tests pasando)

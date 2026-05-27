@@ -3,12 +3,8 @@
  * Registra todos los eventos del usuario con trazabilidad completa
  */
 
-// Importar trpc para guardar en BD
-let trpcClient: any = null;
-
-export function setTrpcClient(client: any) {
-  trpcClient = client;
-}
+// Usar fetch directo en lugar de tRPC para evitar problemas de hooks
+let apiUrl = '/api/trpc';
 
 export type EventType = 'PAGE_VISIT' | 'BUTTON_CLICK' | 'FORM_START' | 'FORM_SUBMIT' | 'FORM_ABANDON' | 'MULTI_ATTEMPT';
 
@@ -95,26 +91,38 @@ export async function trackEvent(
   eventosArray.push(evento);
   localStorage.setItem('susuerte_eventos', JSON.stringify(eventosArray));
 
-  // Guardar en BD si trpcClient está disponible
-  if (trpcClient) {
-    try {
-      await trpcClient.susuert.createEvent.mutate({
-        sessionId: evento.sessionId,
-        eventType: evento.eventType,
-        timestamp: evento.timestamp,
-        ipPublica: evento.ipPublica,
-        ipPrivada: evento.ipPrivada,
-        userAgent: evento.userAgent,
-        navegador: evento.navegador,
-        sistemaOperativo: evento.sistemaOperativo,
-        dispositivo: evento.dispositivo,
-        tiempoActivo: evento.tiempoActivo,
-        paginaVisitada: evento.paginaVisitada,
-        detalles: evento.detalles,
-      }).catch((err: any) => console.error('Error saving event to DB:', err));
-    } catch (error) {
-      console.error('Error saving event to DB:', error);
+  // Guardar en BD usando fetch directo
+  try {
+    const response = await fetch(`${apiUrl}/susuert.createEvent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        json: {
+          sessionId: evento.sessionId,
+          eventType: evento.eventType,
+          timestamp: evento.timestamp,
+          ipPublica: evento.ipPublica,
+          ipPrivada: evento.ipPrivada,
+          userAgent: evento.userAgent,
+          navegador: evento.navegador,
+          sistemaOperativo: evento.sistemaOperativo,
+          dispositivo: evento.dispositivo,
+          tiempoActivo: evento.tiempoActivo,
+          paginaVisitada: evento.paginaVisitada,
+          detalles: evento.detalles ? JSON.stringify(evento.detalles) : null,
+        },
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.warn('Event saved to localStorage but DB sync failed:', response.status, errorData);
     }
+  } catch (error) {
+    console.warn('Event saved to localStorage but DB sync failed:', error);
   }
 
   return evento;

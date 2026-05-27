@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { trpc } from '@/lib/trpc';
+import { exportToCSV, exportEventsToCSV, type UserEventCSVRecord } from '@/lib/csvExport';
 
 interface RegistroUsuario {
   id: number;
@@ -88,42 +89,32 @@ export default function Admin() {
         }));
         setRegistros(registrosFromBD);
       }
-
-      // Cargar eventos desde BD
-      if (getAllEventsQuery.data) {
-        const eventosFromBD = getAllEventsQuery.data.map((e: any) => ({
-          id: e.id,
-          sessionId: e.sessionId,
-          eventType: e.eventType,
-          timestamp: e.timestamp,
-          ipPublica: e.ipPublica || 'Desconocida',
-          ipPrivada: e.ipPrivada || 'No disponible',
-          userAgent: e.userAgent || '',
-          navegador: e.navegador || 'Desconocido',
-          sistemaOperativo: e.sistemaOperativo || 'Desconocido',
-          dispositivo: e.dispositivo || 'Desconocido',
-          tiempoActivo: e.tiempoActivo || 0,
-          paginaVisitada: e.paginaVisitada || '',
-          email: e.email,
-          nombre: e.nombre,
-          detalles: e.detalles ? JSON.parse(e.detalles) : undefined,
-        }));
-        setEventos(eventosFromBD);
-      } else {
-        // Fallback a localStorage si BD no está disponible
-        const eventosGuardados = localStorage.getItem('susuerte_eventos');
-        if (eventosGuardados) {
-          try {
-            const eventosArray = JSON.parse(eventosGuardados);
-            setEventos(eventosArray);
-          } catch (error) {
-            console.error('Error al parsear eventos:', error);
-            setEventos([]);
-          }
-        }
-      }
     }
-  }, [authenticated, getAllRegistrosQuery.data, getAllEventsQuery.data]);
+  }, [authenticated, getAllRegistrosQuery.data]);
+
+  // Cargar eventos desde BD
+  useEffect(() => {
+    if (authenticated && getAllEventsQuery.data) {
+      const eventosFromBD = getAllEventsQuery.data.map((e: any) => ({
+        id: e.id,
+        sessionId: e.sessionId,
+        eventType: e.eventType,
+        timestamp: e.timestamp,
+        ipPublica: e.ipPublica || 'Desconocida',
+        ipPrivada: e.ipPrivada || 'No disponible',
+        userAgent: e.userAgent || '',
+        navegador: e.navegador || 'Desconocido',
+        sistemaOperativo: e.sistemaOperativo || 'Desconocido',
+        dispositivo: e.dispositivo || 'Desconocido',
+        tiempoActivo: e.tiempoActivo || 0,
+        paginaVisitada: e.paginaVisitada || '',
+        email: e.email,
+        nombre: e.nombre,
+        detalles: e.detalles ? JSON.parse(e.detalles) : undefined,
+      }));
+      setEventos(eventosFromBD);
+    }
+  }, [authenticated, getAllEventsQuery.data]);
 
   // Auto-refresh cada 5 segundos
   useEffect(() => {
@@ -131,20 +122,11 @@ export default function Admin() {
 
     const interval = setInterval(() => {
       getAllRegistrosQuery.refetch();
-      // También recargar eventos desde localStorage
-      const eventosGuardados = localStorage.getItem('susuerte_eventos');
-      if (eventosGuardados) {
-        try {
-          const eventosArray = JSON.parse(eventosGuardados);
-          setEventos(eventosArray);
-        } catch (error) {
-          console.error('Error al parsear eventos:', error);
-        }
-      }
+      getAllEventsQuery.refetch();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [authenticated, getAllRegistrosQuery]);
+  }, [authenticated, getAllRegistrosQuery, getAllEventsQuery]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -469,27 +451,67 @@ export default function Admin() {
         {activeTab === 'exportar' && (
           <div className="space-y-6">
             <h2 className="text-3xl font-bold mb-6">Exportar Datos</h2>
+            
+            {/* Exportar Registros */}
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-4">Exportar Registros de Usuarios</h3>
               <button
                 onClick={() => {
-                  const csv = [
-                    ['Nombre', 'Email', 'Teléfono', 'Documento', 'Dispositivo', 'Navegador', 'SO', 'Estado', 'Fecha'].join(','),
-                    ...registros.map(r =>
-                      [r.nombre, r.email, r.telefono || '', r.documento, r.deviceType || '', r.browser || '', r.os || '', r.verificado, r.timestamp].join(',')
-                    ),
-                  ].join('\n');
-
-                  const blob = new Blob([csv], { type: 'text/csv' });
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `registros_${new Date().toISOString().split('T')[0]}.csv`;
-                  a.click();
+                  try {
+                    exportToCSV(registros.map(r => ({
+                      id: r.id,
+                      nombre: r.nombre,
+                      email: r.email,
+                      telefono: r.telefono,
+                      documento: r.documento,
+                      verificado: r.verificado,
+                      deviceType: r.deviceType,
+                      browser: r.browser,
+                      os: r.os,
+                      createdAt: r.createdAt || r.timestamp,
+                    })));
+                  } catch (error) {
+                    alert('Error al exportar: ' + (error as Error).message);
+                  }
                 }}
                 className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-semibold transition"
               >
-                📥 Descargar CSV
+                📥 Descargar Registros CSV
               </button>
+              <p className="text-gray-400 text-sm mt-2">Total de registros: {registros.length}</p>
+            </div>
+
+            {/* Exportar Logs */}
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-4">Exportar Logs de Eventos</h3>
+              <button
+                onClick={() => {
+                  try {
+                    const eventosCSV: UserEventCSVRecord[] = eventos.map(e => ({
+                      id: e.id,
+                      sessionId: e.sessionId,
+                      eventType: e.eventType,
+                      timestamp: e.timestamp,
+                      ipPublica: e.ipPublica,
+                      ipPrivada: e.ipPrivada,
+                      navegador: e.navegador,
+                      sistemaOperativo: e.sistemaOperativo,
+                      dispositivo: e.dispositivo,
+                      tiempoActivo: e.tiempoActivo,
+                      paginaVisitada: e.paginaVisitada,
+                      email: e.email,
+                      nombre: e.nombre,
+                    }));
+                    exportEventsToCSV(eventosCSV);
+                  } catch (error) {
+                    alert('Error al exportar: ' + (error as Error).message);
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition"
+              >
+                📥 Descargar Logs CSV
+              </button>
+              <p className="text-gray-400 text-sm mt-2">Total de eventos: {eventos.length}</p>
             </div>
           </div>
         )}

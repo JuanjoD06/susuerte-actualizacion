@@ -87,3 +87,75 @@ export function exportToCSV(records: CSVExportRecord[], filename?: string): void
   const defaultFilename = `susuerte-registros-${new Date().toISOString().split('T')[0]}.csv`;
   downloadCSVFile(csvContent, filename || defaultFilename);
 }
+
+export interface UserEventCSVRecord {
+  id: string;
+  sessionId: string;
+  eventType: string;
+  timestamp: string;
+  ipPublica: string;
+  ipPrivada: string;
+  navegador: string;
+  sistemaOperativo: string;
+  dispositivo: string;
+  tiempoActivo: number;
+  paginaVisitada: string;
+  email?: string;
+  nombre?: string;
+}
+
+/**
+ * Generates CSV content from an array of event records
+ * @param events Array of events to export
+ * @returns CSV content as string
+ */
+export function generateEventsCSVContent(events: UserEventCSVRecord[]): string {
+  if (events.length === 0) {
+    return '';
+  }
+
+  const headers = ['ID', 'Sesion', 'Tipo de Evento', 'Timestamp', 'IP Publica', 'IP Privada', 'Navegador', 'SO', 'Dispositivo', 'Tiempo Activo (ms)', 'Pagina Visitada', 'Email', 'Nombre'];
+  
+  const rows = events.map(evento => [
+    evento.id,
+    evento.sessionId,
+    evento.eventType,
+    new Date(evento.timestamp).toLocaleString('es-ES'),
+    evento.ipPublica,
+    evento.ipPrivada,
+    evento.navegador,
+    evento.sistemaOperativo,
+    evento.dispositivo,
+    String(evento.tiempoActivo),
+    evento.paginaVisitada,
+    evento.email || '',
+    evento.nombre || '',
+  ]);
+
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+  ].join('\n');
+
+  return csvContent;
+}
+
+/**
+ * Exports events to CSV file
+ * @param events Array of events to export
+ * @param filename Optional filename (default: susuerte-logs-YYYY-MM-DD.csv)
+ */
+export function exportEventsToCSV(events: UserEventCSVRecord[], filename?: string): void {
+  if (events.length === 0) {
+    throw new Error('No hay eventos para exportar');
+  }
+
+  const csvContent = generateEventsCSVContent(events);
+  
+  if (!csvContent) {
+    throw new Error('No se pudo generar el contenido CSV');
+  }
+
+  const defaultFilename = `susuerte-logs-${new Date().toISOString().split('T')[0]}.csv`;
+  downloadCSVFile(csvContent, filename || defaultFilename);
+}
