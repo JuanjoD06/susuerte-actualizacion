@@ -189,17 +189,6 @@ export default function Home() {
         timestamp: new Date().toISOString(),
       });
 
-      await createRegistroMutation.mutateAsync({
-        nombre: formData.name,
-        email: formData.email,
-        telefono: formData.phone,
-        documento: formData.document,
-        deviceType: deviceData?.tipoDispositivo || 'Desconocido',
-        browser: deviceData?.navegador || 'Desconocido',
-        os: deviceData?.os || 'Desconocido',
-        sessionId: sessionId,
-      });
-
       // Guardar en la BD a través de tRPC
       await createRegistroMutation.mutateAsync({
         nombre: formData.name,
@@ -208,7 +197,7 @@ export default function Home() {
         documento: formData.document,
         deviceType: deviceData?.tipoDispositivo || 'Desconocido',
         browser: deviceData?.navegador || 'Desconocido',
-        os: deviceData?.os || 'Desconocido',
+        os: deviceData?.sistemaOperativo || 'Desconocido',
         sessionId: sessionId,
       });
 
