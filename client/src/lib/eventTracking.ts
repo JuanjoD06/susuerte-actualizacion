@@ -199,17 +199,30 @@ async function getPrivateIP(): Promise<string> {
 function detectBrowser(): string {
   const ua = navigator.userAgent;
   
+  // Detectar navegadores basados en Chromium primero (antes de Chrome genérico)
+  if (ua.indexOf('Brave') > -1) return 'Brave';
+  if (ua.indexOf('Vivaldi') > -1) return 'Vivaldi';
+  if (ua.indexOf('Edge') > -1 || ua.indexOf('Edg') > -1) return 'Edge';
+  if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) return 'Opera';
+  
+  // Navegadores principales
   if (ua.indexOf('Firefox') > -1) return 'Firefox';
   if (ua.indexOf('Chrome') > -1 && ua.indexOf('CriOS') === -1) return 'Chrome';
   if (ua.indexOf('CriOS') > -1) return 'Chrome iOS';
+  
+  // Safari
   if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1 && ua.indexOf('CriOS') === -1) {
     if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1 || ua.indexOf('iPod') > -1) {
       return 'Safari iOS';
     }
     return 'Safari';
   }
-  if (ua.indexOf('Edge') > -1 || ua.indexOf('Edg') > -1) return 'Edge';
-  if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) return 'Opera';
+  
+  // Otros navegadores
+  if (ua.indexOf('Trident') > -1 || ua.indexOf('MSIE') > -1) return 'Internet Explorer';
+  if (ua.indexOf('UCBrowser') > -1) return 'UC Browser';
+  if (ua.indexOf('SamsungBrowser') > -1) return 'Samsung Browser';
+  if (ua.indexOf('QQBrowser') > -1) return 'QQ Browser';
   
   return 'Desconocido';
 }

@@ -497,9 +497,106 @@ export default function Admin() {
         {/* Logs Tab */}
         {activeTab === 'logs' && (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-6">Logs del Sistema</h2>
+            <h2 className="text-3xl font-bold mb-6">Logs Detallados de Eventos</h2>
+            
+            {/* Resumen de eventos por tipo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              {[
+                { type: 'PAGE_VISIT', label: 'Visitas a Página', color: 'blue' },
+                { type: 'BUTTON_CLICK', label: 'Clics en Campos', color: 'yellow' },
+                { type: 'FORM_START', label: 'Inicios de Formulario', color: 'green' },
+                { type: 'FORM_SUBMIT', label: 'Envíos de Formulario', color: 'purple' },
+                { type: 'FORM_ABANDON', label: 'Formularios Abandonados', color: 'red' },
+                { type: 'MULTI_ATTEMPT', label: 'Intentos Múltiples', color: 'orange' },
+              ].map(({ type, label, color }) => {
+                const count = eventos.filter(e => e.eventType === type).length;
+                return (
+                  <div key={type} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                    <p className="text-gray-400 text-sm mb-2">{label}</p>
+                    <p className={`text-3xl font-bold text-${color}-400`}>{count}</p>
+                    <p className="text-xs text-gray-500 mt-2">eventos registrados</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tabla detallada de eventos */}
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400">Sección de logs en construcción...</p>
+              <h3 className="text-xl font-bold mb-4">Historial Completo de Eventos</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left py-2 px-3 text-gray-300">Timestamp</th>
+                      <th className="text-left py-2 px-3 text-gray-300">Tipo de Evento</th>
+                      <th className="text-left py-2 px-3 text-gray-300">Usuario</th>
+                      <th className="text-left py-2 px-3 text-gray-300">Sesión</th>
+                      <th className="text-left py-2 px-3 text-gray-300">Navegador</th>
+                      <th className="text-left py-2 px-3 text-gray-300">SO</th>
+                      <th className="text-left py-2 px-3 text-gray-300">Dispositivo</th>
+                      <th className="text-left py-2 px-3 text-gray-300">IP Pública</th>
+                      <th className="text-left py-2 px-3 text-gray-300">Detalles</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eventos.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="text-center py-4 text-gray-400">
+                          No hay eventos registrados
+                        </td>
+                      </tr>
+                    ) : (
+                      eventos.map((evento, idx) => (
+                        <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/50 transition">
+                          <td className="py-2 px-3 text-gray-300">
+                            {new Date(evento.timestamp).toLocaleString('es-ES')}
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              evento.eventType === 'PAGE_VISIT' ? 'bg-blue-900 text-blue-200' :
+                              evento.eventType === 'BUTTON_CLICK' ? 'bg-yellow-900 text-yellow-200' :
+                              evento.eventType === 'FORM_START' ? 'bg-green-900 text-green-200' :
+                              evento.eventType === 'FORM_SUBMIT' ? 'bg-purple-900 text-purple-200' :
+                              evento.eventType === 'FORM_ABANDON' ? 'bg-red-900 text-red-200' :
+                              evento.eventType === 'MULTI_ATTEMPT' ? 'bg-orange-900 text-orange-200' :
+                              'bg-gray-900 text-gray-200'
+                            }`}>
+                              {evento.eventType}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-gray-300">
+                            {evento.nombre || evento.email || 'Anónimo'}
+                          </td>
+                          <td className="py-2 px-3 text-gray-400 text-xs font-mono">
+                            {evento.sessionId.substring(0, 12)}...
+                          </td>
+                          <td className="py-2 px-3 text-gray-300">{evento.navegador}</td>
+                          <td className="py-2 px-3 text-gray-300">{evento.sistemaOperativo}</td>
+                          <td className="py-2 px-3 text-gray-300">{evento.dispositivo}</td>
+                          <td className="py-2 px-3 text-gray-400 text-xs font-mono">
+                            {evento.ipPublica}
+                          </td>
+                          <td className="py-2 px-3">
+                            {evento.detalles ? (
+                              <details className="cursor-pointer">
+                                <summary className="text-blue-400 hover:text-blue-300">Ver</summary>
+                                <div className="mt-2 bg-gray-900 p-2 rounded text-xs font-mono text-gray-300 max-h-40 overflow-y-auto">
+                                  <pre>{JSON.stringify(evento.detalles, null, 2)}</pre>
+                                </div>
+                              </details>
+                            ) : (
+                              <span className="text-gray-500">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">
+                Total de eventos: {eventos.length}
+              </p>
             </div>
           </div>
         )}
