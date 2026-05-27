@@ -5,17 +5,23 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { trpc } from '@/lib/trpc';
 
 interface RegistroUsuario {
-  id: string;
+  id: number;
   nombre: string;
   email: string;
-  telefono: string;
+  telefono: string | null;
   documento: string;
-  verificado: boolean;
+  verificado: 'pendiente' | 'verificado' | 'rechazado';
   timestamp: string;
-  deviceData: any;
-  sessionId: string;
+  deviceData?: any;
+  sessionId?: string;
+  deviceType?: string;
+  browser?: string;
+  os?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface UserEvent {
@@ -51,29 +57,43 @@ export default function Admin() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Cargar datos al montar
-  useEffect(() => {
-    const registrosGuardados = localStorage.getItem('susuerte_registros');
-    const eventosGuardados = localStorage.getItem('susuerte_eventos');
+  // Queries de tRPC
+  const getAllRegistrosQuery = trpc.susuert.getAllRegistros.useQuery(undefined, {
+    enabled: authenticated,
+  });
 
-    if (registrosGuardados) setRegistros(JSON.parse(registrosGuardados));
-    if (eventosGuardados) setEventos(JSON.parse(eventosGuardados));
-  }, []);
+  // Cargar datos al montar y cuando se autentica
+  useEffect(() => {
+    if (authenticated && getAllRegistrosQuery.data) {
+      const registrosFromBD = getAllRegistrosQuery.data.map((r: any) => ({
+        id: r.id,
+        nombre: r.nombre,
+        email: r.email,
+        telefono: r.telefono,
+        documento: r.documento,
+        verificado: r.verificado,
+        timestamp: r.createdAt || new Date().toISOString(),
+        deviceType: r.deviceType,
+        browser: r.browser,
+        os: r.os,
+        sessionId: r.sessionId,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      }));
+      setRegistros(registrosFromBD);
+    }
+  }, [authenticated, getAllRegistrosQuery.data]);
 
   // Auto-refresh cada 5 segundos
   useEffect(() => {
     if (!authenticated) return;
 
     const interval = setInterval(() => {
-      const registrosGuardados = localStorage.getItem('susuerte_registros');
-      const eventosGuardados = localStorage.getItem('susuerte_eventos');
-
-      if (registrosGuardados) setRegistros(JSON.parse(registrosGuardados));
-      if (eventosGuardados) setEventos(JSON.parse(eventosGuardados));
+      getAllRegistrosQuery.refetch();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [authenticated]);
+  }, [authenticated, getAllRegistrosQuery]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +101,8 @@ export default function Admin() {
       setAuthenticated(true);
       setUsername('');
       setPassword('');
+      // Cargar datos de la BD
+      getAllRegistrosQuery.refetch();
     } else {
       alert('Usuario o contraseña incorrectos');
     }
@@ -92,12 +114,29 @@ export default function Admin() {
     setPassword('');
   };
 
-  const toggleVerificacion = (id: string) => {
-    const nuevosRegistros = registros.map(r =>
-      r.id === id ? { ...r, verificado: !r.verificado } : r
+  const updateRegistroMutation = trpc.susuert.updateRegistro.useMutation();
+
+  const toggleVerificacion = (id: number) => {
+    const registro = registros.find(r => r.id === id);
+    if (!registro) return;
+
+    // Cambiar estado: pendiente -> verificado -> rechazado -> pendiente
+    let nuevoEstado: 'pendiente' | 'verificado' | 'rechazado' = 'pendiente';
+    if (registro.verificado === 'pendiente') nuevoEstado = 'verificado';
+    else if (registro.verificado === 'verificado') nuevoEstado = 'rechazado';
+
+    updateRegistroMutation.mutate(
+      { id, verificado: nuevoEstado },
+      {
+        onSuccess: () => {
+          // Actualizar estado local
+          const nuevosRegistros = registros.map(r =>
+            r.id === id ? { ...r, verificado: nuevoEstado } : r
+          );
+          setRegistros(nuevosRegistros);
+        },
+      }
     );
-    setRegistros(nuevosRegistros);
-    localStorage.setItem('susuerte_registros', JSON.stringify(nuevosRegistros));
   };
 
   // Calcular métricas
@@ -248,11 +287,12 @@ export default function Admin() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Usuario</label>
               <input
-                type="text"
+                type="password"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="admin"
+                placeholder="••••••"
+                autoComplete="off"
               />
             </div>
             <div>
@@ -262,7 +302,8 @@ export default function Admin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="admin123"
+                placeholder="••••••"
+                autoComplete="off"
               />
             </div>
             <button
@@ -406,12 +447,18 @@ export default function Admin() {
                         <td className="px-4 py-3">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              registro.verificado
+                              registro.verificado === 'verificado'
                                 ? 'bg-green-900 text-green-300'
+                                : registro.verificado === 'rechazado'
+                                ? 'bg-red-900 text-red-300'
                                 : 'bg-yellow-900 text-yellow-300'
                             }`}
                           >
-                            {registro.verificado ? '✓ Verificado' : '⏳ Pendiente'}
+                            {registro.verificado === 'verificado'
+                              ? '✓ Verificado'
+                              : registro.verificado === 'rechazado'
+                              ? '✗ Rechazado'
+                              : '⏳ Pendiente'}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -419,7 +466,11 @@ export default function Admin() {
                             onClick={() => toggleVerificacion(registro.id)}
                             className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm font-semibold transition"
                           >
-                            {registro.verificado ? 'Desverificar' : 'Verificar'}
+                            {registro.verificado === 'pendiente'
+                              ? 'Verificar'
+                              : registro.verificado === 'verificado'
+                              ? 'Rechazar'
+                              : 'Pendiente'}
                           </button>
                         </td>
                       </tr>

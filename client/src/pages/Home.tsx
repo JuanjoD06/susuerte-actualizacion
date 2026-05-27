@@ -200,6 +200,19 @@ export default function Home() {
         sessionId: sessionId,
       });
 
+      // Guardar en la BD a través de tRPC
+      await createRegistroMutation.mutateAsync({
+        nombre: formData.name,
+        email: formData.email,
+        telefono: formData.phone,
+        documento: formData.document,
+        deviceType: deviceData?.tipoDispositivo || 'Desconocido',
+        browser: deviceData?.navegador || 'Desconocido',
+        os: deviceData?.os || 'Desconocido',
+        sessionId: sessionId,
+      });
+
+      // También guardar en localStorage como respaldo
       const registrosGuardados = localStorage.getItem("susuerte_registros");
       const registros = registrosGuardados ? JSON.parse(registrosGuardados) : [];
 
