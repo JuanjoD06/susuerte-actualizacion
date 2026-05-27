@@ -54,6 +54,14 @@
 - [x] Datos unificados: mismo panel en desktop y móvil
 - [x] Formulario guarda en BD además de localStorage
 
+## Features Completadas (Fase 6 - Centralización de Métricas)
+- [x] Tabla userEvents creada en BD
+- [x] Eventos se guardan en BD además de localStorage
+- [x] Panel Admin carga eventos desde BD
+- [x] Sincronización de datos entre dispositivos
+- [x] Eliminación de eventos desde BD
+- [x] Mismo panel muestra todos los datos en desktop y móvil
+
 ## Features Pendientes (Opcional)
 - [ ] Implementar envío real de emails de verificación
 - [ ] Integrar con servicio de email (SendGrid, Mailgun, Resend)
