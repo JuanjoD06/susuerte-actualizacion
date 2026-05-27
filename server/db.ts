@@ -1,6 +1,6 @@
 import { eq, desc, or, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, susuertRegistros, InsertSusuertRegistro, emailVerificationTokens, InsertEmailVerificationToken } from "../drizzle/schema";
+import { InsertUser, users, susuertRegistros, InsertSusuertRegistro, emailVerificationTokens, InsertEmailVerificationToken, userEvents, InsertUserEvent } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -307,6 +307,78 @@ export async function deleteAllSusuertRegistros() {
     return { success: true };
   } catch (error) {
     console.error("[Database] Failed to delete registros:", error);
+    throw error;
+  }
+}
+
+
+// User Events Helpers
+export async function createUserEvent(evento: InsertUserEvent) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create event: database not available");
+    return undefined;
+  }
+
+  try {
+    const result = await db.insert(userEvents).values(evento);
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to create event:", error);
+    throw error;
+  }
+}
+
+export async function getAllUserEvents() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get events: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(userEvents)
+      .orderBy(desc(userEvents.createdAt));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get events:", error);
+    throw error;
+  }
+}
+
+export async function deleteAllUserEvents() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot delete events: database not available");
+    return { deletedCount: 0 };
+  }
+
+  try {
+    await db.delete(userEvents);
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to delete events:", error);
+    throw error;
+  }
+}
+
+export async function getUserEventsBySessionId(sessionId: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get events: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db
+      .select()
+      .from(userEvents)
+      .where(eq(userEvents.sessionId, sessionId));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get events:", error);
     throw error;
   }
 }

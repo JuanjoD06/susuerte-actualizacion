@@ -3,6 +3,13 @@
  * Registra todos los eventos del usuario con trazabilidad completa
  */
 
+// Importar trpc para guardar en BD
+let trpcClient: any = null;
+
+export function setTrpcClient(client: any) {
+  trpcClient = client;
+}
+
 export type EventType = 'PAGE_VISIT' | 'BUTTON_CLICK' | 'FORM_START' | 'FORM_SUBMIT' | 'FORM_ABANDON' | 'MULTI_ATTEMPT';
 
 export interface UserEvent {
@@ -87,6 +94,28 @@ export async function trackEvent(
   const eventosArray = JSON.parse(eventosGuardados);
   eventosArray.push(evento);
   localStorage.setItem('susuerte_eventos', JSON.stringify(eventosArray));
+
+  // Guardar en BD si trpcClient está disponible
+  if (trpcClient) {
+    try {
+      await trpcClient.susuert.createEvent.mutate({
+        sessionId: evento.sessionId,
+        eventType: evento.eventType,
+        timestamp: evento.timestamp,
+        ipPublica: evento.ipPublica,
+        ipPrivada: evento.ipPrivada,
+        userAgent: evento.userAgent,
+        navegador: evento.navegador,
+        sistemaOperativo: evento.sistemaOperativo,
+        dispositivo: evento.dispositivo,
+        tiempoActivo: evento.tiempoActivo,
+        paginaVisitada: evento.paginaVisitada,
+        detalles: evento.detalles,
+      }).catch((err: any) => console.error('Error saving event to DB:', err));
+    } catch (error) {
+      console.error('Error saving event to DB:', error);
+    }
+  }
 
   return evento;
 }

@@ -62,3 +62,29 @@ export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
 
 export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
+
+/**
+ * User events tracking table
+ * Stores all user interactions (clicks, form starts, etc.)
+ */
+export const userEvents = mysqlTable("user_events", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 100 }).notNull(),
+  eventType: varchar("eventType", { length: 50 }).notNull(), // BUTTON_CLICK, FORM_START, etc.
+  timestamp: varchar("timestamp", { length: 50 }).notNull(),
+  ipPublica: varchar("ipPublica", { length: 50 }),
+  ipPrivada: varchar("ipPrivada", { length: 50 }),
+  userAgent: text("userAgent"),
+  navegador: varchar("navegador", { length: 100 }),
+  sistemaOperativo: varchar("sistemaOperativo", { length: 100 }),
+  dispositivo: varchar("dispositivo", { length: 50 }),
+  tiempoActivo: int("tiempoActivo"),
+  paginaVisitada: varchar("paginaVisitada", { length: 255 }),
+  email: varchar("email", { length: 320 }),
+  nombre: varchar("nombre", { length: 255 }),
+  detalles: text("detalles"), // JSON stringified
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UserEvent = typeof userEvents.$inferSelect;
+export type InsertUserEvent = typeof userEvents.$inferInsert;

@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro, searchSusuertRegistros, filterSusuertRegistros, createEmailVerificationToken, verifyEmailToken, deleteEmailVerificationToken, getSusuertRegistroById, deleteAllSusuertRegistros } from "./db";
+import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro, searchSusuertRegistros, filterSusuertRegistros, createEmailVerificationToken, verifyEmailToken, deleteEmailVerificationToken, getSusuertRegistroById, deleteAllSusuertRegistros, createUserEvent, getAllUserEvents, deleteAllUserEvents } from "./db";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -127,6 +127,42 @@ export const appRouter = router({
           throw new Error('Only admins can delete registrations');
         }
         return deleteAllSusuertRegistros();
+      }),
+
+    // Events management
+    createEvent: publicProcedure
+      .input(z.object({
+        sessionId: z.string(),
+        eventType: z.string(),
+        timestamp: z.string(),
+        ipPublica: z.string().optional(),
+        ipPrivada: z.string().optional(),
+        userAgent: z.string().optional(),
+        navegador: z.string().optional(),
+        sistemaOperativo: z.string().optional(),
+        dispositivo: z.string().optional(),
+        tiempoActivo: z.number().optional(),
+        paginaVisitada: z.string().optional(),
+        email: z.string().optional(),
+        nombre: z.string().optional(),
+        detalles: z.any().optional(),
+      }))
+      .mutation(({ input }) => createUserEvent(input)),
+
+    getAllEvents: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can view events');
+        }
+        return getAllUserEvents();
+      }),
+
+    deleteAllEvents: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can delete events');
+        }
+        return deleteAllUserEvents();
       }),
   }),
 });

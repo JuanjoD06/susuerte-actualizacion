@@ -17,7 +17,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { initializeSession, trackEvent } from "@/lib/eventTracking";
+import { initializeSession, trackEvent, setTrpcClient } from "@/lib/eventTracking";
 import { captureAdvancedDeviceData } from "@/lib/advancedDeviceDetection";
 import { setupFormTouchTracking, getDebugInfo, type TouchEventData } from "@/lib/touchEventDetection";
 
@@ -69,6 +69,9 @@ export default function Home() {
   // Inicializar sesión y capturar datos técnicos
   useEffect(() => {
     const initializeUser = async () => {
+      // Inicializar trpcClient para guardar eventos en BD
+      setTrpcClient(trpc);
+
       // Inicializar sesión de eventos
       const newSessionId = initializeSession();
       setSessionId(newSessionId);

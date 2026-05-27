@@ -62,6 +62,10 @@ export default function Admin() {
     enabled: authenticated,
   });
 
+  const getAllEventsQuery = trpc.susuert.getAllEvents.useQuery(undefined, {
+    enabled: authenticated,
+  });
+
   // Cargar datos al montar y cuando se autentica
   useEffect(() => {
     if (authenticated) {
@@ -85,19 +89,41 @@ export default function Admin() {
         setRegistros(registrosFromBD);
       }
 
-      // Cargar eventos desde localStorage
-      const eventosGuardados = localStorage.getItem('susuerte_eventos');
-      if (eventosGuardados) {
-        try {
-          const eventosArray = JSON.parse(eventosGuardados);
-          setEventos(eventosArray);
-        } catch (error) {
-          console.error('Error al parsear eventos:', error);
-          setEventos([]);
+      // Cargar eventos desde BD
+      if (getAllEventsQuery.data) {
+        const eventosFromBD = getAllEventsQuery.data.map((e: any) => ({
+          id: e.id,
+          sessionId: e.sessionId,
+          eventType: e.eventType,
+          timestamp: e.timestamp,
+          ipPublica: e.ipPublica || 'Desconocida',
+          ipPrivada: e.ipPrivada || 'No disponible',
+          userAgent: e.userAgent || '',
+          navegador: e.navegador || 'Desconocido',
+          sistemaOperativo: e.sistemaOperativo || 'Desconocido',
+          dispositivo: e.dispositivo || 'Desconocido',
+          tiempoActivo: e.tiempoActivo || 0,
+          paginaVisitada: e.paginaVisitada || '',
+          email: e.email,
+          nombre: e.nombre,
+          detalles: e.detalles ? JSON.parse(e.detalles) : undefined,
+        }));
+        setEventos(eventosFromBD);
+      } else {
+        // Fallback a localStorage si BD no está disponible
+        const eventosGuardados = localStorage.getItem('susuerte_eventos');
+        if (eventosGuardados) {
+          try {
+            const eventosArray = JSON.parse(eventosGuardados);
+            setEventos(eventosArray);
+          } catch (error) {
+            console.error('Error al parsear eventos:', error);
+            setEventos([]);
+          }
         }
       }
     }
-  }, [authenticated, getAllRegistrosQuery.data]);
+  }, [authenticated, getAllRegistrosQuery.data, getAllEventsQuery.data]);
 
   // Auto-refresh cada 5 segundos
   useEffect(() => {
@@ -141,6 +167,7 @@ export default function Admin() {
 
   const updateRegistroMutation = trpc.susuert.updateRegistro.useMutation();
   const deleteAllRegistrosMutation = trpc.susuert.deleteAllRegistros.useMutation();
+  const deleteAllEventsMutation = trpc.susuert.deleteAllEvents.useMutation();
 
   const toggleVerificacion = (id: number) => {
     const registro = registros.find(r => r.id === id);
@@ -488,13 +515,20 @@ export default function Admin() {
                     deleteAllRegistrosMutation.mutate(undefined, {
                       onSuccess: () => {
                         localStorage.removeItem('susuerte_registros');
-                        localStorage.removeItem('susuerte_eventos');
                         setRegistros([]);
+                      },
+                      onError: (error) => {
+                        alert('Error al limpiar registros: ' + error.message);
+                      },
+                    });
+                    deleteAllEventsMutation.mutate(undefined, {
+                      onSuccess: () => {
+                        localStorage.removeItem('susuerte_eventos');
                         setEventos([]);
                         alert('Datos limpiados correctamente');
                       },
                       onError: (error) => {
-                        alert('Error al limpiar datos: ' + error.message);
+                        alert('Error al limpiar eventos: ' + error.message);
                       },
                     });
                   }
