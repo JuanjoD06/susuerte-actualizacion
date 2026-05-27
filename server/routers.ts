@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro, searchSusuertRegistros, filterSusuertRegistros, createEmailVerificationToken, verifyEmailToken, deleteEmailVerificationToken, getSusuertRegistroById } from "./db";
+import { createSusuertRegistro, getAllSusuertRegistros, updateSusuertRegistro, searchSusuertRegistros, filterSusuertRegistros, createEmailVerificationToken, verifyEmailToken, deleteEmailVerificationToken, getSusuertRegistroById, deleteAllSusuertRegistros } from "./db";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -119,6 +119,14 @@ export const appRouter = router({
           success: true,
           message: 'Email verified successfully',
         };
+      }),
+
+    deleteAllRegistros: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Only admins can delete registrations');
+        }
+        return deleteAllSusuertRegistros();
       }),
   }),
 });

@@ -45,6 +45,15 @@
 - [x] Responsive en desktop y móvil
 - [x] 28 tests pasando
 
+## Features Completadas (Fase 5 - Integración BD)
+- [x] Base de datos unificada para todos los registros
+- [x] Panel Admin carga datos desde BD
+- [x] Credenciales ocultas en campos de login
+- [x] Actualización automática cada 5 segundos
+- [x] Estados de verificación: pendiente, verificado, rechazado
+- [x] Datos unificados: mismo panel en desktop y móvil
+- [x] Formulario guarda en BD además de localStorage
+
 ## Features Pendientes (Opcional)
 - [ ] Implementar envío real de emails de verificación
 - [ ] Integrar con servicio de email (SendGrid, Mailgun, Resend)

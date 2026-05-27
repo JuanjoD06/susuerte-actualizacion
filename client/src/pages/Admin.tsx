@@ -115,6 +115,7 @@ export default function Admin() {
   };
 
   const updateRegistroMutation = trpc.susuert.updateRegistro.useMutation();
+  const deleteAllRegistrosMutation = trpc.susuert.deleteAllRegistros.useMutation();
 
   const toggleVerificacion = (id: number) => {
     const registro = registros.find(r => r.id === id);
@@ -650,11 +651,18 @@ export default function Admin() {
                 <button
                   onClick={() => {
                     if (confirm('¿Estás seguro de que deseas limpiar todos los datos?')) {
-                      localStorage.removeItem('susuerte_registros');
-                      localStorage.removeItem('susuerte_eventos');
-                      setRegistros([]);
-                      setEventos([]);
-                      alert('Datos limpiados correctamente');
+                      deleteAllRegistrosMutation.mutate(undefined, {
+                        onSuccess: () => {
+                          localStorage.removeItem('susuerte_registros');
+                          localStorage.removeItem('susuerte_eventos');
+                          setRegistros([]);
+                          setEventos([]);
+                          alert('Datos limpiados correctamente');
+                        },
+                        onError: (error) => {
+                          alert('Error al limpiar datos: ' + error.message);
+                        },
+                      });
                     }
                   }}
                   className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-semibold transition"

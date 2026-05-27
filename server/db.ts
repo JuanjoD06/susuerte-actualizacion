@@ -294,3 +294,19 @@ export async function deleteEmailVerificationToken(token: string) {
     throw error;
   }
 }
+
+export async function deleteAllSusuertRegistros() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot delete registros: database not available");
+    return { deletedCount: 0 };
+  }
+
+  try {
+    await db.delete(susuertRegistros);
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to delete registros:", error);
+    throw error;
+  }
+}
