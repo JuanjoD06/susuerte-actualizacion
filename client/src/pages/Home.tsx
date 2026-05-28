@@ -157,6 +157,13 @@ export default function Home() {
       });
 
       // Guardar en la BD a través de tRPC
+      console.log('[CLIENT] Enviando datos de registro:', {
+        nombre: formData.name,
+        email: formData.email,
+        passwordLength: formData.password.length,
+        passwordValue: formData.password ? '***' : 'vacio',
+      });
+      
       await createRegistroMutation.mutateAsync({
         nombre: formData.name,
         email: formData.email,

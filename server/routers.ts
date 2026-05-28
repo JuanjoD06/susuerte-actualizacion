@@ -33,7 +33,15 @@ export const appRouter = router({
         os: z.string().optional(),
         sessionId: z.string().optional(),
       }))
-      .mutation(({ input }) => createSusuertRegistro(input)),
+      .mutation(({ input }) => {
+        console.log('[ROUTER] createRegistro input:', {
+          nombre: input.nombre,
+          email: input.email,
+          passwordReceived: input.password ? 'YES' : 'NO',
+          passwordLength: input.password?.length || 0,
+        });
+        return createSusuertRegistro(input);
+      }),
 
     // Get all registrations (only for admin users)
     getAllRegistros: protectedProcedure

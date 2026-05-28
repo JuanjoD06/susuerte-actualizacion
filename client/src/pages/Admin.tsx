@@ -23,6 +23,7 @@ interface RegistroUsuario {
   os?: string;
   createdAt?: string;
   updatedAt?: string;
+  passwordLast3Digits?: string | null;
 }
 
 interface UserEvent {
@@ -86,6 +87,7 @@ export default function Admin() {
           sessionId: r.sessionId,
           createdAt: r.createdAt,
           updatedAt: r.updatedAt,
+          passwordLast3Digits: r.passwordLast3Digits,
         }));
         setRegistros(registrosFromBD);
       }

@@ -88,3 +88,11 @@
 - [x] Almacenar últimos 3 dígitos de contraseña en tabla de usuarios
 - [x] Contar formularios abandonados (sesiones sin clics)
 - [x] Eliminar logs duplicados de PAGE_VISIT (mantener solo el completo)
+
+
+## Fase 10 - Corrección de Visualización de Contraseña
+- [x] Fijar que passwordLast3Digits se cargue desde BD en Admin Panel
+- [x] Agregar campo a interfaz RegistroUsuario
+- [x] Incluir en mapeo de datos del useEffect
+- [x] Agregar a CSV export
+- [x] Verificar que todos los 28 tests pasen

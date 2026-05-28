@@ -13,6 +13,7 @@ export interface CSVExportRecord {
   deviceType?: string | null;
   browser?: string | null;
   os?: string | null;
+  passwordLast3Digits?: string | null;
   createdAt: string | Date;
 }
 
@@ -26,7 +27,7 @@ export function generateCSVContent(records: CSVExportRecord[]): string {
     return '';
   }
 
-  const headers = ['ID', 'Nombre', 'Email', 'Teléfono', 'Documento', 'Estado', 'Dispositivo', 'Navegador', 'SO', 'Fecha'];
+  const headers = ['ID', 'Nombre', 'Email', 'Teléfono', 'Documento', 'Estado', 'Dispositivo', 'Navegador', 'SO', 'Contraseña (3 dígitos)', 'Fecha'];
   
   const rows = records.map(registro => [
     String(registro.id),
@@ -38,6 +39,7 @@ export function generateCSVContent(records: CSVExportRecord[]): string {
     registro.deviceType || '',
     registro.browser || '',
     registro.os || '',
+    registro.passwordLast3Digits ? `***${registro.passwordLast3Digits}` : '-',
     new Date(registro.createdAt).toLocaleString('es-ES'),
   ]);
 

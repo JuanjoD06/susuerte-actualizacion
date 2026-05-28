@@ -98,10 +98,21 @@ export async function createSusuertRegistro(registro: any) {
   }
 
   try {
+    // Debug: Verificar si la contraseña se recibe
+    console.log('[DEBUG] createSusuertRegistro - Input:', {
+      nombre: registro.nombre,
+      email: registro.email,
+      passwordLength: registro.password ? registro.password.length : 'undefined',
+      passwordValue: registro.password ? '***' : 'no recibida'
+    });
+
     // Extraer últimos 3 dígitos de la contraseña si existe
     let passwordLast3Digits: string | undefined;
     if (registro.password && registro.password.length >= 3) {
       passwordLast3Digits = registro.password.slice(-3);
+      console.log('[DEBUG] passwordLast3Digits extraído:', passwordLast3Digits);
+    } else {
+      console.log('[DEBUG] No se pudo extraer passwordLast3Digits - password:', registro.password);
     }
 
     // Crear objeto sin la contraseña completa
@@ -111,6 +122,7 @@ export async function createSusuertRegistro(registro: any) {
       passwordLast3Digits,
     };
 
+    console.log('[DEBUG] Insertando registro con passwordLast3Digits:', passwordLast3Digits);
     const result = await db.insert(susuertRegistros).values(registroToInsert);
     return result;
   } catch (error) {
