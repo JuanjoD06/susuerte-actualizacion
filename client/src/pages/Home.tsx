@@ -59,6 +59,7 @@ export default function Home() {
   const [deviceData, setDeviceData] = useState<any>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const [formStarted, setFormStarted] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const formRef = useRef<HTMLFormElement>(null);
   const cleanupTouchTrackingRef = useRef<(() => void) | null>(null);
   const touchEventCountRef = useRef<Map<string, number>>(new Map());
@@ -141,6 +142,14 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrors({});
+
+    // Validar que la contraseña no esté vacía
+    if (!formData.password || formData.password.trim().length === 0) {
+      setErrors({ password: 'Este campo es obligatorio' });
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const passwordEntered = formData.password.length > 0;
@@ -435,17 +444,22 @@ export default function Home() {
                   onClick={() => handleFieldClick('password')}
                   onFocus={(e) => {
                     handleFieldFocus('password');
-                    e.target.style.borderColor = "#1a3fa0";
-                    e.target.style.boxShadow = "0 0 0 3px rgba(26,63,160,0.12)";
+                    e.target.style.borderColor = errors.password ? "#ef4444" : "#1a3fa0";
+                    e.target.style.boxShadow = errors.password ? "0 0 0 3px rgba(239,68,68,0.12)" : "0 0 0 3px rgba(26,63,160,0.12)";
                   }}
                   onBlur={(e) => {
                     handleFieldBlur('password');
-                    e.target.style.borderColor = "#e5e7eb";
+                    e.target.style.borderColor = errors.password ? "#ef4444" : "#e5e7eb";
                     e.target.style.boxShadow = "none";
                   }}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none transition-all duration-200"
-                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                  style={{ fontFamily: "'Nunito', sans-serif", borderColor: errors.password ? "#ef4444" : undefined }}
                 />
+                {errors.password && (
+                  <span className="text-sm text-red-500" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                    {errors.password}
+                  </span>
+                )}
               </div>
 
               {/* Botón Actualizar */}
